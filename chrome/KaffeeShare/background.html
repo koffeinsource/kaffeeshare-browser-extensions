@@ -18,7 +18,6 @@
 	}
 
 	function sharePage() {
-		//TODO extension options to manualy define url?
 		var url = settings.get('url');
 		chrome.tabs.getSelected(null, function(tab) {
 			chrome.pageAction.setIcon({
