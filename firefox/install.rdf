@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+
+  <Description about="urn:mozilla:install-manifest">
+    <em:id>kaffeshare@kaffeeshare.appspot.com</em:id>
+    <em:name>KaffeeShare</em:name>
+    <em:description>This extension adds a share button to the urlbar which allows you to share the page link via KaffeeShare.</em:description>
+    <em:version>0.1</em:version>
+    <em:creator>KaffeeShare Team</em:creator>
+    <em:homepageURL>http://kaffeeshare.appspot.com/</em:homepageURL>
+    <em:iconURL>chrome://kaffeeshare/skin/comic_30x30.png</em:iconURL>
+    <em:icon64URL>chrome://kaffeeshare/skin/comic_128x128.png</em:icon64URL>
+    <em:optionsURL>chrome://kaffeeshare/content/options.xul</em:optionsURL>
+    <em:type>2</em:type>
+
+    <!-- Mozilla Firefox -->
+    <em:targetApplication>
+      <Description>
+        <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
+        <em:minVersion>4.0</em:minVersion>
+        <em:maxVersion>10.*</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+  </Description>
+</RDF>
