@@ -24,7 +24,7 @@ KaffeeShareChrome.BrowserOverlay = {
 			return;
 		}
 		
-		var shareUrl = KaffeeShareChrome.BrowserOverlay.url 
+		var shareUrl = "https://" + KaffeeShareChrome.BrowserOverlay.url 
 						+ "/oneclickshare?ns="
 						+ KaffeeShareChrome.BrowserOverlay.ns 
 						+ "&url="
