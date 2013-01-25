@@ -15,7 +15,7 @@ window.addEventListener('keydown', function(event) {
 	}
 }, false);
 
-chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
+chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 	var url = null;
 	try {
 		url = jQuery('#current-entry .entry-title-link').attr('href');
