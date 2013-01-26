@@ -1,4 +1,3 @@
-// SAMPLE
 this.i18n = {
     "sharing": {
         "en": "Sharing Settings",
@@ -8,12 +7,20 @@ this.i18n = {
         "en": "Backend",
         "de": "Backend"
     },
-    "url_label": {
-        "en": "URL",
-        "de": "URL"
+    "server_label": {
+        "en": "Server",
+        "de": "Server"
     },
-    "url_text": {
-        "en": "Please provide the sharing URL of your webapplication. The URL-to-share will be appended (encoded).",
-        "de": "Bitte gib die URL deiner Webapplikation an. An diese URL wird der Link den Du teilen möchstes angehängt (encoded)."
+    "server_text": {
+        "en": "Please provide address of the server.",
+        "de": "Bitte gib die Adresse des Servers ein."
+    },
+    "namespace_label": {
+        "en": "Namespace",
+        "de": "Namespace"
+    },
+    "namespace_text": {
+        "en": "Please provide your namespace.",
+        "de": "Bitte gib deinen Namespace ein."
     }
 };

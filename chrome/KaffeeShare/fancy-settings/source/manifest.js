@@ -6,22 +6,37 @@ this.manifest = {
         {
             "tab": i18n.get("sharing"),
             "group": i18n.get("backend"),
-            "name": "url",
+            "name": "server",
             "type": "text",
-            "label": i18n.get("url_label"),
+            "label": i18n.get("server_label"),
             "text": ""
         },
         {
             "tab": i18n.get("sharing"),
             "group": i18n.get("backend"),
-            "name": "url_description",
+            "name": "sever_description",
             "type": "description",
-            "text": i18n.get("url_text")
+            "text": i18n.get("server_text")
+        },
+        {
+            "tab": i18n.get("sharing"),
+            "group": i18n.get("backend"),
+            "name": "namespace",
+            "type": "text",
+            "label": i18n.get("namespace_label"),
+            "text": ""
+        },
+        {
+            "tab": i18n.get("sharing"),
+            "group": i18n.get("backend"),
+            "name": "namespace_description1",
+            "type": "description",
+            "text": i18n.get("namespace_text")
         }
     ],
     "alignment": [
         [
-            "url"
+            "server", "namespace"
         ]
     ]
 };
