@@ -22,18 +22,15 @@
 				path : 'loading_16x16.png'
 			});
 			tabId = tab.id;
-			if (tab.url.indexOf('www.google') > -1
-					&& tab.url.indexOf('/reader/') > -1) {
 				chrome.tabs.sendMessage(tab.id, {
 					job : 'getUrlToShare'
 				}, function handler(response) {
-					url += encodeURIComponent(response.urltoshare);
+					// we get a response if there is a specialized plugin
+					if (response) url += encodeURIComponent(response.urltoshare);
+					// if not, we just use the tab url
+					else url += encodeURIComponent(tab.url);
 					sendPageToShare(url, tabId);
 				});
-			} else {
-				url += encodeURIComponent(tab.url);
-				sendPageToShare(url, tabId);
-			}
 		});
 	}
 
