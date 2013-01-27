@@ -81,4 +81,10 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 	if (request.share_page) {
 		sharePage();
 	}
+	if (request.reset_icon) {
+		chrome.pageAction.setIcon({
+			tabId : tabId,
+			path : 'comic_16x16.png'
+		});
+	}
 });
