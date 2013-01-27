@@ -22,15 +22,15 @@ function sharePage() {
 			path : 'loading_16x16.png'
 		});
 		tabId = tab.id;
-			chrome.tabs.sendMessage(tab.id, {
-				job : 'getUrlToShare'
-			}, function handler(response) {
-				// we get a response if there is a specialized plugin
-				if (response) url += encodeURIComponent(response.urltoshare);
-				// if not, we just use the tab url
-				else url += encodeURIComponent(tab.url);
-				sendPageToShare(url, tabId);
-			});
+		chrome.tabs.sendMessage(tab.id, {
+			job : 'getUrlToShare'
+		}, function handler(response) {
+			// we get a response if there is a specialized plugin
+			if (response) url += encodeURIComponent(response.urltoshare);
+			// if not, we just use the tab url
+			else url += encodeURIComponent(tab.url);
+			sendPageToShare(url, tabId);
+		});
 	});
 }
 
@@ -70,6 +70,12 @@ function showSuccessIndicatorIcon(tabId) {
 chrome.pageAction.onClicked.addListener(sharePage);
 
 chrome.tabs.onUpdated.addListener(showIcon);
+
+chrome.commands.onCommand.addListener(function(command) {
+	if(command =="share") {
+		sharePage();
+	}
+});
 
 chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 	if (request.share_page) {
