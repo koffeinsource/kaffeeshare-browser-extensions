@@ -120,6 +120,19 @@ KaffeeShareChrome.BrowserOverlay = {
 	},
 
 	/**
+	 * Handle a key down event.
+	 */
+	keydown : function(event) {
+
+		// Bind to both command (for Mac) and control (for Win/Linux)
+		if ( (event.ctrlKey || event.metaKey) && (event.keyCode == 190) ) {
+			
+			// ctrl + . share a page
+			KaffeeShareChrome.BrowserOverlay.share(event);
+		}
+	},
+
+	/**
 	 * Initialize the extension.
 	 */
 	startup : function() {
@@ -181,3 +194,4 @@ gBrowser.addProgressListener( { onLocationChange : function(aWebProgress,aReques
 
 window.addEventListener("load", function(e) { KaffeeShareChrome.BrowserOverlay.startup(); }, false);
 window.addEventListener("unload", function(e) { KaffeeShareChrome.BrowserOverlay.shutdown(); }, false);
+window.addEventListener('keydown', function(e) { KaffeeShareChrome.BrowserOverlay.keydown(e); }, false);

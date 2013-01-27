@@ -1,0 +1,5 @@
+<!ENTITY kaffeeshare.sharepage      "Diese Seite teilen">
+<!ENTITY kaffeeshare.url            "Server">
+<!ENTITY kaffeeshare.ns             "Namensraum">
+<!ENTITY kaffeeshare.options.desc   "Bitte gib den Namensraum und die Addresse des Servers ein.">
+<!ENTITY kaffeeshare.options.title  "KaffeeShare Einstellungen">
