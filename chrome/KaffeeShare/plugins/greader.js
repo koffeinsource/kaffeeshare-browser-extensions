@@ -1,4 +1,3 @@
-
 chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 	var url = null;
 	try {

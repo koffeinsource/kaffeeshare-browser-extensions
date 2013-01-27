@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "KaffeeShare",
   "description": "This extension adds a share button to the toolbar which allows you to share the page link via KaffeeShare.",
-  "version": "0.2.37",
+  "version": "0.2.39",
   "icons": { "128": "comic_128x128.png" },
   "background": {
     "page": "background.html",
@@ -14,6 +14,14 @@
   ],
   "page_action": {
     "default_title": "Share this page"
+  },
+  "commands": {
+    "share": {
+      "suggested_key": {
+        "default": "Ctrl+1"
+      },
+      "description": "Share the current tab."
+    }
   },
   "content_scripts": [
     {
