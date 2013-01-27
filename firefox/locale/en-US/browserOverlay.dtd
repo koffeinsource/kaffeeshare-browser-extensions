@@ -1,5 +1,5 @@
 <!ENTITY kaffeeshare.sharepage      "Share this page">
 <!ENTITY kaffeeshare.url            "Server">
 <!ENTITY kaffeeshare.ns             "Namespace">
-<!ENTITY kaffeeshare.options.desc   "Please provide the sharing URL of your webapplication.">
+<!ENTITY kaffeeshare.options.desc   "Please provide namespace and the sharing URL of your webapplication.">
 <!ENTITY kaffeeshare.options.title  "KaffeeShare Preferences">

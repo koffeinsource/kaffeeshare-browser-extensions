@@ -6,7 +6,7 @@
   <Description about="urn:mozilla:install-manifest">
     <em:id>kaffeshare@kaffeeshare.appspot.com</em:id>
     <em:name>KaffeeShare</em:name>
-    <em:description>This extension adds a share button to the urlbar which allows you to share the page link via KaffeeShare.</em:description>
+    <em:description>This extension adds a icon to the urlbar which allows you to share the page link via KaffeeShare.</em:description>
     <em:version>0.1</em:version>
     <em:creator>KaffeeShare Team</em:creator>
     <em:homepageURL>http://kaffeeshare.appspot.com/</em:homepageURL>
@@ -14,6 +14,14 @@
     <em:icon64URL>chrome://kaffeeshare/skin/comic_128x128.png</em:icon64URL>
     <em:optionsURL>chrome://kaffeeshare/content/options.xul</em:optionsURL>
     <em:type>2</em:type>
+    
+    <em:localized>
+      <Description>
+        <em:locale>de-DE</em:locale>
+        <em:name>KaffeeShare</em:name>
+        <em:description>Diese Erweiterung fügt ein Zeichen in die Addresszeile mit welchem die Addresse via KaffeeShare geteilt werden kann.</em:description>
+      </Description>
+    </em:localized>
 
     <!-- Mozilla Firefox -->
     <em:targetApplication>
