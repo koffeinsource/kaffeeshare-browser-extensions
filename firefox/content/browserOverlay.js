@@ -27,9 +27,22 @@ KaffeeShareChrome.BrowserOverlay = {
 		var urltoshare = document.getElementById("urlbar").value
 		if (urltoshare.indexOf('www.google') > -1
 			&& urltoshare.indexOf('/reader/') > -1) {
-
 				urltoshare = gBrowser.contentDocument.getElementById('current-entry').getElementsByTagName("a")[0].getAttribute("href");
-
+				
+				// find element to observe
+				var target = gBrowser.contentDocument.getElementById('current-entry');
+		 
+				// create an observer instance
+				var observer = new MutationObserver(function(mutations) {
+					KaffeeShareChrome.BrowserOverlay.reset();
+					observer.disconnect();
+				});
+		 
+				// configuration of the observer:
+				var config = { attributes: true, childList: true, characterData: true, subtree: true }
+				 
+				// pass in the target node, as well as the observer options
+				observer.observe(target, config);				
 		}
 
 		
