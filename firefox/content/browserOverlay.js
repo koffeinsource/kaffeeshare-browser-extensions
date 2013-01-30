@@ -29,10 +29,12 @@ KaffeeShareChrome.BrowserOverlay = {
 			&& urltoshare.indexOf('/reader/') > -1) {
 				urltoshare = gBrowser.contentDocument.getElementById('current-entry').getElementsByTagName("a")[0].getAttribute("href");
 				
+				// we need to reset our tab-bar icon if 'current-entry' is changed, e.g. to another news item.
 				// find element to observe
 				var target = gBrowser.contentDocument.getElementById('current-entry');
 		 
 				// create an observer instance
+				// the function is called if the target is changed
 				var observer = new MutationObserver(function(mutations) {
 					KaffeeShareChrome.BrowserOverlay.reset();
 					observer.disconnect();
