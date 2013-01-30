@@ -24,12 +24,21 @@ KaffeeShareChrome.BrowserOverlay = {
 			return;
 		}
 		
+		var urltoshare = document.getElementById("urlbar").value
+		if (urltoshare.indexOf('www.google') > -1
+			&& urltoshare.indexOf('/reader/') > -1) {
+
+				urltoshare = gBrowser.contentDocument.getElementById('current-entry').getElementsByTagName("a")[0].getAttribute("href");
+
+		}
+
+		
 		var shareUrl = "https://" + KaffeeShareChrome.BrowserOverlay.url 
 						+ "/oneclickshare?ns="
 						+ KaffeeShareChrome.BrowserOverlay.ns 
 						+ "&url="
-						+ encodeURIComponent(document.getElementById("urlbar").value);
-		
+						+ encodeURIComponent(urltoshare);
+
 		// Prepare request
 		var request = new XMLHttpRequest();
 		request.open("GET", shareUrl, true);
@@ -137,6 +146,14 @@ KaffeeShareChrome.BrowserOverlay = {
 	 */
 	startup : function() {
 
+		// Add listeners
+		gBrowser.addProgressListener( { onLocationChange : function(aWebProgress,aRequest,aLocation) { KaffeeShareChrome.BrowserOverlay.locationChange(aWebProgress,aRequest,aLocation); },
+										onStateChange: function(aWebProgress,aRequest, aStateFlags, aStatus) {},
+										onProgressChange: function(aWebProgress,aRequest, aCurSelfProgress, aMaxSelfProgress, aCurTotalProgress, aMaxTotalProgress) {},
+										onStatusChange: function(aWebProgress,aRequest, aStatus, aMessage) {},
+										onSecurityChange: function(aWebProgress,aRequest, aState) {} 
+									  });
+
 		// Register to receive notifications of preference changes
 		KaffeeShareChrome.BrowserOverlay.prefs = Components.classes["@mozilla.org/preferences-service;1"]
 												.getService(Components.interfaces.nsIPrefService)
@@ -183,14 +200,6 @@ KaffeeShareChrome.BrowserOverlay = {
 	}
 };
 
-
-// Add listeners
-gBrowser.addProgressListener( { onLocationChange : function(aWebProgress,aRequest,aLocation) { KaffeeShareChrome.BrowserOverlay.locationChange(aWebProgress,aRequest,aLocation); },
-								onStateChange: function(aWebProgress,aRequest, aStateFlags, aStatus) {},
-								onProgressChange: function(aWebProgress,aRequest, aCurSelfProgress, aMaxSelfProgress, aCurTotalProgress, aMaxTotalProgress) {},
-								onStatusChange: function(aWebProgress,aRequest, aStatus, aMessage) {},
-								onSecurityChange: function(aWebProgress,aRequest, aState) {} 
-							  });
 
 window.addEventListener("load", function(e) { KaffeeShareChrome.BrowserOverlay.startup(); }, false);
 window.addEventListener("unload", function(e) { KaffeeShareChrome.BrowserOverlay.shutdown(); }, false);
