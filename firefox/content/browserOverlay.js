@@ -104,9 +104,6 @@ KaffeeShareChrome.BrowserOverlay = {
 				} else if(state == "error") {
 					KaffeeShareChrome.BrowserOverlay.error();
 					return;
-				} else if(state == "loading") {
-					KaffeeShareChrome.BrowserOverlay.loading();
-					return;
 				}
 			}
 		} catch (e) {
