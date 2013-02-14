@@ -52,6 +52,8 @@ KaffeeShareChrome.BrowserOverlay = {
 						+ KaffeeShareChrome.BrowserOverlay.ns 
 						+ "&url="
 						+ encodeURIComponent(urltoshare);
+		
+		Application.console.log("Kaffeeshare | Share url: " + shareUrl);
 
 		// Prepare request
 		var request = new XMLHttpRequest();
