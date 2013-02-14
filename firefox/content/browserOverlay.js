@@ -13,6 +13,7 @@ KaffeeShareChrome.BrowserOverlay = {
 	pref : null,
 	url : "",
 	ns : "",
+	http : false,
 	stringBundle : null,
 
 	/**
@@ -47,11 +48,18 @@ KaffeeShareChrome.BrowserOverlay = {
 				observer.observe(target, config);				
 		}
 		
-		var shareUrl = "https://" + KaffeeShareChrome.BrowserOverlay.url 
+		var protocol = "https://";
+		if(KaffeeShareChrome.BrowserOverlay.http) {
+			protocol = "http://";
+		}
+		
+		var shareUrl = protocol + KaffeeShareChrome.BrowserOverlay.url 
 						+ "/oneclickshare?ns="
 						+ KaffeeShareChrome.BrowserOverlay.ns 
 						+ "&url="
 						+ encodeURIComponent(urltoshare);
+		
+		Application.console.log("Kaffeeshare | Share url: " + shareUrl);
 
 		// Prepare request
 		var request = new XMLHttpRequest();
@@ -213,6 +221,7 @@ KaffeeShareChrome.BrowserOverlay = {
 		// Get URL and namespace
 		KaffeeShareChrome.BrowserOverlay.url = KaffeeShareChrome.BrowserOverlay.prefs.getCharPref("kaffeeshare-url");
 		KaffeeShareChrome.BrowserOverlay.ns = KaffeeShareChrome.BrowserOverlay.prefs.getCharPref("kaffeeshare-ns");
+		KaffeeShareChrome.BrowserOverlay.http = KaffeeShareChrome.BrowserOverlay.prefs.getBoolPref("kaffeeshare-http");
 		
 		KaffeeShareChrome.BrowserOverlay.update();
 	},
@@ -239,6 +248,9 @@ KaffeeShareChrome.BrowserOverlay = {
 				break;
 			case "kaffeeshare-ns":
 				KaffeeShareChrome.BrowserOverlay.ns = KaffeeShareChrome.BrowserOverlay.prefs.getCharPref("kaffeeshare-ns");
+				break;
+			case "kaffeeshare-http":
+				KaffeeShareChrome.BrowserOverlay.http = KaffeeShareChrome.BrowserOverlay.prefs.getBoolPref("kaffeeshare-http");
 				break;
 		}
 
