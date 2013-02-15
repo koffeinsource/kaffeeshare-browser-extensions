@@ -1,11 +1,15 @@
 this.i18n = {
     "sharing": {
-        "en": "Sharing Settings",
+        "en": "Share Settings",
         "de": "Einstellungen zum Teilen"
     },
     "backend": {
         "en": "Backend",
         "de": "Backend"
+    },
+    "like": {
+        "en": "Block like buttons",
+        "de": "Block like buttons"
     },
     "server_label": {
         "en": "Server",
@@ -26,5 +30,9 @@ this.i18n = {
     "https_label": {
         "en": "Disable HTTPS.",
         "de": "HTTPS deaktivieren."
+    },
+    "disconnect_text": {
+        "en": "The Disconnect Chrome extension can block like/g+ buttons. <a href='https://disconnect.me/'>Install it</a>",
+        "de": "Die Disconnect Chrome Erweiterung kann like/g+ buttons blockieren. <a href='https://disconnect.me/'>Installieren</a>"
     }
 };
