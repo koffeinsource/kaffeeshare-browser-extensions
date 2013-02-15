@@ -23,7 +23,8 @@
        insertbefore="star-button" 
        src="chrome://kaffeeshare/skin/comic_16x16.png"
        tooltiptext="&kaffeeshare.sharepage;"
-       onclick="KaffeeShareChrome.BrowserOverlay.share(event);" />
+       onclick="KaffeeShareChrome.BrowserOverlay.share(event);"
+       class="urlbar-icon" />
    </hbox>
 
 </overlay>

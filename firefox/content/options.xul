@@ -12,6 +12,7 @@
     <preferences>
       <preference id="kaffeeshare-url-pref" name="kaffeeshare.kaffeeshare-url" type="string"/>
       <preference id="kaffeeshare-ns-pref" name="kaffeeshare.kaffeeshare-ns" type="string"/>
+      <preference id="kaffeeshare-http-pref" name="kaffeeshare.kaffeeshare-http" type="bool"/>
     </preferences>
  
     <vbox>
@@ -23,6 +24,9 @@
       <hbox align="center">
         <label control="kaffeeshare-ns" value="&kaffeeshare.ns;"/>
         <textbox preference="kaffeeshare-ns-pref" id="kaffeeshare-ns" flex="1"/>
+      </hbox>
+      <hbox align="center">
+        <checkbox label="&kaffeeshare.http;" preference="kaffeeshare-http-pref" checked="false"/>
       </hbox>
     </vbox>
   </prefpane>

@@ -13,6 +13,7 @@ KaffeeShareChrome.BrowserOverlay = {
 	pref : null,
 	url : "",
 	ns : "",
+	http : false,
 	stringBundle : null,
 
 	/**
@@ -24,7 +25,7 @@ KaffeeShareChrome.BrowserOverlay = {
 			return;
 		}
 		
-		var urltoshare = document.getElementById("urlbar").value
+		var urltoshare = gBrowser.contentDocument.location.toString();
 		if (urltoshare.indexOf('www.google') > -1
 			&& urltoshare.indexOf('/reader/') > -1) {
 				urltoshare = gBrowser.contentDocument.getElementById('current-entry').getElementsByTagName("a")[0].getAttribute("href");
@@ -46,13 +47,19 @@ KaffeeShareChrome.BrowserOverlay = {
 				// pass in the target node, as well as the observer options
 				observer.observe(target, config);				
 		}
-
 		
-		var shareUrl = "https://" + KaffeeShareChrome.BrowserOverlay.url 
+		var protocol = "https://";
+		if(KaffeeShareChrome.BrowserOverlay.http) {
+			protocol = "http://";
+		}
+		
+		var shareUrl = protocol + KaffeeShareChrome.BrowserOverlay.url 
 						+ "/oneclickshare?ns="
 						+ KaffeeShareChrome.BrowserOverlay.ns 
 						+ "&url="
 						+ encodeURIComponent(urltoshare);
+		
+		Application.console.log("Kaffeeshare | Share url: " + shareUrl);
 
 		// Prepare request
 		var request = new XMLHttpRequest();
@@ -82,6 +89,11 @@ KaffeeShareChrome.BrowserOverlay = {
 		// Send request
 		request.send(null);
 
+		// Save the last shared url in the current tab
+		var iOService = Components.classes["@mozilla.org/network/io-service;1"]
+						.getService(Components.interfaces.nsIIOService);
+		gBrowser.selectedTab.kaffeeshare_lastUrl = iOService.newURI(urltoshare, null, null);
+		
 		KaffeeShareChrome.BrowserOverlay.loading();
 	},
 	
@@ -89,6 +101,24 @@ KaffeeShareChrome.BrowserOverlay = {
 	 * Handle a location change.
 	 */
 	locationChange : function(progress, request, uri) {
+
+		try {
+			// Check, weather the selected tab has been shared
+			if(uri.equals(gBrowser.selectedTab.kaffeeshare_lastUrl)) {
+				var state = gBrowser.selectedTab.kaffeeshare_state;
+				if(state == "ok") {
+					KaffeeShareChrome.BrowserOverlay.ok();
+					return;
+				} else if(state == "error") {
+					KaffeeShareChrome.BrowserOverlay.error();
+					return;
+				}
+			}
+		} catch (e) {
+			gBrowser.selectedTab.kaffeeshare_lastUrl = ""
+			gBrowser.selectedTab.kaffeeshare_state = ""
+		}
+
 		KaffeeShareChrome.BrowserOverlay.update();
 	},
 	
@@ -114,6 +144,8 @@ KaffeeShareChrome.BrowserOverlay = {
 		var img = document.getElementById("kaffeeshare-share-button");
 		img.setAttribute("src", "chrome://kaffeeshare/skin/comic_16x16.png");
 		img.setAttribute("tooltiptext", KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.sharepage"));
+		
+		gBrowser.selectedTab.kaffeeshare_state = "ready";
 	},
 	
 	/**
@@ -123,6 +155,8 @@ KaffeeShareChrome.BrowserOverlay = {
 		var img = document.getElementById("kaffeeshare-share-button");
 		img.setAttribute("src", "chrome://kaffeeshare/skin/error_16x16.png");
 		img.setAttribute("tooltiptext", msg);
+		
+		gBrowser.selectedTab.kaffeeshare_state = "error";
 	},
 	
 	/**
@@ -132,6 +166,8 @@ KaffeeShareChrome.BrowserOverlay = {
 		var img = document.getElementById("kaffeeshare-share-button");
 		img.setAttribute("src", "chrome://kaffeeshare/skin/ok_16x16.png");
 		img.setAttribute("tooltiptext", KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.ok"));
+		
+		gBrowser.selectedTab.kaffeeshare_state = "ok";
 	},
 	
 	/**
@@ -141,6 +177,8 @@ KaffeeShareChrome.BrowserOverlay = {
 		var img = document.getElementById("kaffeeshare-share-button");
 		img.setAttribute("src", "chrome://kaffeeshare/skin/loading_16x16.png");
 		img.setAttribute("tooltiptext", KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.loading"));
+		
+		gBrowser.selectedTab.kaffeeshare_state = "loading";
 	},
 
 	/**
@@ -183,6 +221,7 @@ KaffeeShareChrome.BrowserOverlay = {
 		// Get URL and namespace
 		KaffeeShareChrome.BrowserOverlay.url = KaffeeShareChrome.BrowserOverlay.prefs.getCharPref("kaffeeshare-url");
 		KaffeeShareChrome.BrowserOverlay.ns = KaffeeShareChrome.BrowserOverlay.prefs.getCharPref("kaffeeshare-ns");
+		KaffeeShareChrome.BrowserOverlay.http = KaffeeShareChrome.BrowserOverlay.prefs.getBoolPref("kaffeeshare-http");
 		
 		KaffeeShareChrome.BrowserOverlay.update();
 	},
@@ -209,6 +248,9 @@ KaffeeShareChrome.BrowserOverlay = {
 				break;
 			case "kaffeeshare-ns":
 				KaffeeShareChrome.BrowserOverlay.ns = KaffeeShareChrome.BrowserOverlay.prefs.getCharPref("kaffeeshare-ns");
+				break;
+			case "kaffeeshare-http":
+				KaffeeShareChrome.BrowserOverlay.http = KaffeeShareChrome.BrowserOverlay.prefs.getBoolPref("kaffeeshare-http");
 				break;
 		}
 
