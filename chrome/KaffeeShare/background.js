@@ -2,6 +2,7 @@
 var settings = new Store('settings', {
 	'server' : '',
 	'namespace' : '',
+	'https_disabled' : ''
 });
 
 function showIcon(tabId, changeInfo, tab) {
@@ -15,7 +16,12 @@ function showIcon(tabId, changeInfo, tab) {
 }
 
 function sharePage() {
-	var url = "https://" + settings.get('server') + "/oneclickshare?ns=" + settings.get('namespace') + "&url=";
+	var url = "https://";
+	console.log(settings.get('https_disabled'));
+	if (settings.get('https_disabled')) {
+		url = "http://";
+	}
+	url = url + settings.get('server') + "/oneclickshare?ns=" + settings.get('namespace') + "&url=";
 	chrome.tabs.getSelected(null, function(tab) {
 		chrome.pageAction.setIcon({
 			tabId : tab.id,

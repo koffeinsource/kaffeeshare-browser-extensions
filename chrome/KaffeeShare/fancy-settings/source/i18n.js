@@ -22,5 +22,9 @@ this.i18n = {
     "namespace_text": {
         "en": "Please provide your namespace.",
         "de": "Bitte gib deinen Namespace ein."
+    },
+    "https_label": {
+        "en": "Disable HTTPS.",
+        "de": "HTTPS deaktivieren."
     }
 };

@@ -32,6 +32,13 @@ this.manifest = {
             "name": "namespace_description1",
             "type": "description",
             "text": i18n.get("namespace_text")
+        },
+        {
+            "tab": i18n.get("sharing"),
+            "group": i18n.get("backend"),
+            "name": "https_disabled",
+            "type": "checkbox",
+            "label": i18n.get("https_label")
         }
     ],
     "alignment": [
