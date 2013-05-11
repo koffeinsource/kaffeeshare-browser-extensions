@@ -17,11 +17,10 @@ function showIcon(tabId, changeInfo, tab) {
 
 function sharePage() {
 	var url = "https://";
-	console.log(settings.get('https_disabled'));
 	if (settings.get('https_disabled')) {
 		url = "http://";
 	}
-	url = url + settings.get('server') + "/oneclickshare?ns=" + settings.get('namespace') + "&url=";
+	url += settings.get('server') + "/oneclickshare?ns=" + settings.get('namespace') + "&url=";
 	chrome.tabs.getSelected(null, function(tab) {
 		chrome.pageAction.setIcon({
 			tabId : tab.id,
@@ -73,7 +72,33 @@ function showSuccessIndicatorIcon(tabId) {
 	});
 }
 
-chrome.pageAction.onClicked.addListener(sharePage);
+var alreadyClicked = false;
+var timer;
+chrome.pageAction.onClicked.addListener(function (tab) {
+    //Check for previous click
+    if (alreadyClicked) {
+        clearTimeout(timer);
+		var url = "https://";
+		if (settings.get('https_disabled')) {
+			url = "http://";
+		}
+		url += settings.get('server') + "/html.html?ns=" + settings.get('namespace');
+		window.open(url, '_blank');
+		window.focus();
+        alreadyClicked = false;
+        return;
+    }
+
+    alreadyClicked = true;
+
+    timer = setTimeout(function () {
+    	sharePage();
+
+        clearTimeout(timer);
+        alreadyClicked = false;
+    }, 250);
+});
+
 
 chrome.tabs.onUpdated.addListener(showIcon);
 
