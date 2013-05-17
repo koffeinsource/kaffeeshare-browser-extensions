@@ -2,9 +2,9 @@
 var settings = new Store('settings', {
 	'server' : '',
 	'namespace' : '',
-	'https_disabled' : ''
+	'https_disabled' : '',
+	'check_for_news': ''
 });
-
 
 // use 'ready', 'loading', 'success', 'error', 'news' as valid states
 var status = '';
@@ -14,7 +14,7 @@ chrome.tabs.onUpdated.addListener (resetIcon);
 chrome.pageAction.onClicked.addListener (iconClick);
 
 chrome.commands.onCommand.addListener(function(command) {
-	if(command =="share") {
+	if(command == "share") {
 		sharePage();
 	}
 });
@@ -35,51 +35,58 @@ function resetIcon() {
 
 		// keep icon if it is loding, success, or error
 		if (status == 'loading' || status == 'success' || status == 'error') return;
-
-		chrome.storage.sync.get('news', function(result) {
-			if (result.news == true) {
-				showNewsIndicatorIcon(tab.id);
-			} else {
-				showReadyIndicatorIcon(tab.id);
-			}
-			chrome.pageAction.show(tab.id);
-		});
-	});
-}
-
-// checkForUpdates is called every 30s
-setInterval(checkForUpdates, 30000);
-// true if checkForUpdates is current active ... not threadsafe
-var workingInterval = false;
-function checkForUpdates() {
-	if (workingInterval) return;
-	workingInterval = true;
-
-	chrome.storage.sync.get('updated', function(result) {
-		var updated;
-		if (result.updated) {
-			updated = result.updated;
-		} else {
-			updated = 0;
-		}
-
-		// get last update from the kshare server
-		var xhr = new XMLHttpRequest();
-		xhr.open("GET", getServer()+"json?op=updated&ns=" + settings.get('namespace'), false);
-		xhr.send();
-		var resp = JSON.parse(xhr.responseText);
-
-		// so, are there any news?
-		if (updated<resp.last_update) {
-			chrome.storage.sync.set({'updated': resp.last_update, 'news': true}, function() {
-				resetIcon();
-				workingInterval = false;
+		console.log(settings.get('check_for_news'));
+		if (settings.get('check_for_news') == true) {
+			chrome.storage.sync.get('news', function(result) {
+				if (result.news == true) {
+					showNewsIndicatorIcon(tab.id);
+				} else {
+					showReadyIndicatorIcon(tab.id);
+				}
 			});
 		} else {
-			workingInterval = false;
+			showReadyIndicatorIcon(tab.id);
 		}
 	});
 }
+
+if (settings.get('check_for_news') == true) {
+	// checkForUpdates is called every 30s
+	setInterval(checkForUpdates, 30000);
+	// true if checkForUpdates is current active ... not threadsafe
+	var workingInterval = false;
+
+	function checkForUpdates() {
+		if (workingInterval) return;
+		workingInterval = true;
+
+		chrome.storage.sync.get('updated', function(result) {
+			var updated;
+			if (result.updated) {
+				updated = result.updated;
+			} else {
+				updated = 0;
+			}
+
+			// get last update from the kshare server
+			var xhr = new XMLHttpRequest();
+			xhr.open("GET", getServer()+"json?op=updated&ns=" + settings.get('namespace'), false);
+			xhr.send();
+			var resp = JSON.parse(xhr.responseText);
+
+			// so, are there any news?
+			if (updated<resp.last_update) {
+				chrome.storage.sync.set({'updated': resp.last_update, 'news': true}, function() {
+					resetIcon();
+					workingInterval = false;
+				});
+			} else {
+				workingInterval = false;
+			}
+		});
+	}
+}
+
 
 function sharePage() {
 	url = getServer() + "oneclickshare?ns=" + settings.get('namespace') + "&url=";
@@ -159,14 +166,16 @@ function showReadyIndicatorIcon(tabId) {
 		tabId : tabId,
 		path : 'comic_16x16.png'
 	});
+	chrome.pageAction.show(tabId);
 }
 
-function showReadyIndicatorIcon(tabId) {
+function showNewsIndicatorIcon(tabId) {
 	status = 'news';
 	chrome.pageAction.setIcon({
 		tabId : tabId,
 		path : 'news_16x16.png'
 	});
+	chrome.pageAction.show(tabId);
 }
 
 function showErrorIndicatorIcon(tabId) {
@@ -175,6 +184,7 @@ function showErrorIndicatorIcon(tabId) {
 		tabId : tabId,
 		path : 'error_16x16.png'
 	});
+	chrome.pageAction.show(tabId);
 }
 
 function showSuccessIndicatorIcon(tabId) {
@@ -183,6 +193,7 @@ function showSuccessIndicatorIcon(tabId) {
 		tabId : tabId,
 		path : 'ok_16x16.png'
 	});
+	chrome.pageAction.show(tabId);
 }
 
 function showLoadingIndicatorIcon(tabId) {
@@ -191,4 +202,5 @@ function showLoadingIndicatorIcon(tabId) {
 		tabId : tabId,
 		path : 'loading_16x16.png'
 	});
+	chrome.pageAction.show(tabId);
 }

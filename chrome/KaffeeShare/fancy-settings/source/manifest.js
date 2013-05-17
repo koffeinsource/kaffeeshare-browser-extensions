@@ -42,6 +42,13 @@ this.manifest = {
         },
         {
             "tab": i18n.get("sharing"),
+            "group": i18n.get("backend"),
+            "name": "check_for_news",
+            "type": "checkbox",
+            "label": i18n.get("news_label")
+        },
+        {
+            "tab": i18n.get("sharing"),
             "group": i18n.get("like"),
             "name": "disconnect_description",
             "type": "description",
