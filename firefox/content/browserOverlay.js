@@ -15,50 +15,75 @@ KaffeeShareChrome.BrowserOverlay = {
 	ns : "",
 	http : false,
 	stringBundle : null,
+	iconAlreadyClicked : false,
+	doubleClickTimer : null,
+
+	/**
+	 * The icon is clicked.
+	 */
+	iconClick : function(aEvent) {
+		
+		if(KaffeeShareChrome.BrowserOverlay.url == "" || KaffeeShareChrome.BrowserOverlay.ns == "" ) {
+			return;
+		}
+
+		//Check for previous click
+		if (KaffeeShareChrome.BrowserOverlay.iconAlreadyClicked) {
+			clearTimeout(KaffeeShareChrome.BrowserOverlay.doubleClickTimer);
+			var url = KaffeeShareChrome.BrowserOverlay.getServer()
+					+ "/html.html?ns="
+					+ KaffeeShareChrome.BrowserOverlay.ns;
+
+			var currentBrowser = top.document.getElementById("content");
+			var tab = currentBrowser.addTab(url);
+			currentBrowser.selectedTab = tab;
+
+			KaffeeShareChrome.BrowserOverlay.iconAlreadyClicked = false;
+			return;
+		}
+
+		KaffeeShareChrome.BrowserOverlay.iconAlreadyClicked = true;
+		KaffeeShareChrome.BrowserOverlay.doubleClickTimer = setTimeout(function () {
+				clearTimeout(KaffeeShareChrome.BrowserOverlay.doubleClickTimer);
+				KaffeeShareChrome.BrowserOverlay.alreadyClicked = false;
+				KaffeeShareChrome.BrowserOverlay.share();
+			}, 250);
+	},
 
 	/**
 	 * Share the current page.
 	 */
 	share : function(aEvent) {
-		
-		if(KaffeeShareChrome.BrowserOverlay.url == "" || KaffeeShareChrome.BrowserOverlay.ns == "" ) {
-			return;
-		}
-		
+
 		var urltoshare = gBrowser.contentDocument.location.toString();
 		if (urltoshare.indexOf('www.google') > -1
 			&& urltoshare.indexOf('/reader/') > -1) {
 				urltoshare = gBrowser.contentDocument.getElementById('current-entry').getElementsByTagName("a")[0].getAttribute("href");
-				
+
 				// we need to reset our tab-bar icon if 'current-entry' is changed, e.g. to another news item.
 				// find element to observe
 				var target = gBrowser.contentDocument.getElementById('current-entry');
-		 
+
 				// create an observer instance
 				// the function is called if the target is changed
 				var observer = new MutationObserver(function(mutations) {
 					KaffeeShareChrome.BrowserOverlay.reset();
 					observer.disconnect();
 				});
-		 
+
 				// configuration of the observer:
 				var config = { attributes: true, childList: true, characterData: true, subtree: true }
-				 
+
 				// pass in the target node, as well as the observer options
 				observer.observe(target, config);				
 		}
-		
-		var protocol = "https://";
-		if(KaffeeShareChrome.BrowserOverlay.http) {
-			protocol = "http://";
-		}
-		
-		var shareUrl = protocol + KaffeeShareChrome.BrowserOverlay.url 
+
+		var shareUrl = KaffeeShareChrome.BrowserOverlay.getServer()
 						+ "/oneclickshare?ns="
 						+ KaffeeShareChrome.BrowserOverlay.ns 
 						+ "&url="
 						+ encodeURIComponent(urltoshare);
-		
+
 		Application.console.log("Kaffeeshare | Share url: " + shareUrl);
 
 		// Prepare request
@@ -96,7 +121,7 @@ KaffeeShareChrome.BrowserOverlay = {
 		
 		KaffeeShareChrome.BrowserOverlay.loading();
 	},
-	
+
 	/**
 	 * Handle a location change.
 	 */
@@ -121,12 +146,12 @@ KaffeeShareChrome.BrowserOverlay = {
 
 		KaffeeShareChrome.BrowserOverlay.update();
 	},
-	
+
 	/**
-	 * Handle a location change.
+	 * Handle a settings update.
 	 */
 	update : function() {
-		
+
 		if(KaffeeShareChrome.BrowserOverlay.url == "") {
 			KaffeeShareChrome.BrowserOverlay.error(KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.error.url"));
 		} else if(KaffeeShareChrome.BrowserOverlay.ns == "") {
@@ -144,10 +169,10 @@ KaffeeShareChrome.BrowserOverlay = {
 		var img = document.getElementById("kaffeeshare-share-button");
 		img.setAttribute("src", "chrome://kaffeeshare/skin/comic_16x16.png");
 		img.setAttribute("tooltiptext", KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.sharepage"));
-		
+
 		gBrowser.selectedTab.kaffeeshare_state = "ready";
 	},
-	
+
 	/**
 	 * Handle an error.
 	 */
@@ -158,7 +183,7 @@ KaffeeShareChrome.BrowserOverlay = {
 		
 		gBrowser.selectedTab.kaffeeshare_state = "error";
 	},
-	
+
 	/**
 	 * Handle a ok.
 	 */
@@ -169,7 +194,7 @@ KaffeeShareChrome.BrowserOverlay = {
 		
 		gBrowser.selectedTab.kaffeeshare_state = "ok";
 	},
-	
+
 	/**
 	 * Handle a loading.
 	 */
@@ -188,10 +213,24 @@ KaffeeShareChrome.BrowserOverlay = {
 
 		// Bind to both command (for Mac) and control (for Win/Linux)
 		if ( (event.ctrlKey || event.metaKey) && (event.keyCode == 190) ) {
-			
+
 			// ctrl + . share a page
-			KaffeeShareChrome.BrowserOverlay.share(event);
+			KaffeeShareChrome.BrowserOverlay.iconClick(event);
 		}
+	},
+
+	/**
+	 * Gets the server url.
+	 */
+	getServer : function(aEvent) {
+
+		var protocol = "https://";
+		if(KaffeeShareChrome.BrowserOverlay.http) {
+			protocol = "http://";
+		}
+
+		var url = protocol + KaffeeShareChrome.BrowserOverlay.url;
+		return url;
 	},
 
 	/**
