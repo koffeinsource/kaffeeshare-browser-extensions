@@ -31,6 +31,10 @@ this.i18n = {
         "en": "Disable HTTPS.",
         "de": "HTTPS deaktivieren."
     },
+    "news_label": {
+        "en": "Automatically check for news and notify me.",
+        "de": "Automatisch auf Neuigkeit überprüfen und mich informieren."
+    },
     "disconnect_text": {
         "en": "The Disconnect Chrome extension can block like/g+ buttons. <a href='https://disconnect.me/'>Install it</a>",
         "de": "Die Disconnect Chrome Erweiterung kann like/g+ buttons blockieren. <a href='https://disconnect.me/'>Installieren</a>"
