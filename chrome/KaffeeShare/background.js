@@ -7,7 +7,7 @@ var settings = new Store('settings', {
 });
 
 // use 'ready', 'loading', 'success', 'error', 'news' as valid states
-var status = '';
+var status;
 
 chrome.tabs.onActivated.addListener (resetIcon);
 chrome.tabs.onUpdated.addListener (resetIcon);
@@ -35,7 +35,6 @@ function resetIcon() {
 
 		// keep icon if it is loding, success, or error
 		if (status == 'loading' || status == 'success' || status == 'error') return;
-		console.log(settings.get('check_for_news'));
 		if (settings.get('check_for_news') == true) {
 			chrome.storage.sync.get('news', function(result) {
 				if (result.news == true) {
@@ -52,7 +51,7 @@ function resetIcon() {
 
 if (settings.get('check_for_news') == true) {
 	// checkForUpdates is called every 30s
-	setInterval(checkForUpdates, 30000);
+	setInterval(checkForUpdates, 60000);
 	// true if checkForUpdates is current active ... not threadsafe
 	var workingInterval = false;
 
@@ -146,7 +145,7 @@ function iconClick() {
     clickTimer = setTimeout(function () {
 		sharePage();
 
-	    clearTimeout(timer);
+	    clearTimeout(clickTimer);
 	    alreadyClicked = false;
 	}, 250);
 }
