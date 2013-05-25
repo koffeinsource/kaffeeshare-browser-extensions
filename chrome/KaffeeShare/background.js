@@ -6,8 +6,8 @@ var settings = new Store('settings', {
 	'check_for_news': ''
 });
 
-// use status[tab.id] with states 'ready', 'loading', 'success', 'error', 'news'
-var status;
+// for the news check
+var intervalListener;
 
 chrome.tabs.onActivated.addListener (resetIcon);
 chrome.tabs.onUpdated.addListener (resetIcon);
@@ -28,82 +28,118 @@ chrome.extension.onMessage.addListener (function(request, sender, sendResponse) 
 	}
 });
 
-function resetIcon() {
-	if (!status) status = new Array();
-	chrome.tabs.getSelected(null, function(tab) {
-		// show the icon only for urls starting with http
-		if (tab.url.indexOf('http') != 0) return;
-
-		// keep icon if it is loding, success, or error
-		if (status[tab.id] == 'loading') {
-			showLoadingIndicatorIcon(tab.id);
-			return;
-		}
-		if (status[tab.id] == 'success') {
-			showSuccessIndicatorIcon(tab.id);
-			return;
-		}
-		if (status[tab.id] == 'error') {
-			showErrorIndicatorIcon(tab.id);
-			return;
-		}
-		if (settings.get('check_for_news') == true) {
-			chrome.storage.sync.get('news', function(result) {
-				if (result.news == true) {
-					showNewsIndicatorIcon(tab.id);
-				} else {
-					showReadyIndicatorIcon(tab.id);
-				}
-			});
+function addURLtoStorage(url) {
+	chrome.storage.sync.get('shared_urls', function(result) {
+		var asoc;
+		if (result.shared_urls) {
+			asoc = result.shared_urls;
 		} else {
-			showReadyIndicatorIcon(tab.id);
+			// DB empty
+			asoc = {};
+		}
+
+		asoc[url] = true;
+		storeSharedURLs(asoc, 0);
+	});
+}
+
+// recursively called in case of error
+function storeSharedURLs(asoc, counter) {
+	//chrome.storage.sync.clear();
+	chrome.storage.sync.set({'shared_urls': asoc}, function() {
+		// save failed?
+		if ( chrome.runtime.lastError && counter < 10) {
+
+			// ok let's delete one random item from the shared urls
+			// this may delete the new url, but let us hope for the best
+			rdnnumber = Math.floor(Math.random()*asoc.length);
+			i = 0;
+			for (var key in asoc) {
+				if (i == rdnnumber) delete asoc[key];
+				++i;
+			}
+
+			// retry to save data
+			storeSharedURLs(asoc, counter+1);
 		}
 	});
 }
 
-if (settings.get('check_for_news') == true) {
-	// checkForUpdates is called every 30s
-	setInterval(checkForUpdates, 60000);
-	// true if checkForUpdates is current active ... not threadsafe
-	var workingInterval = false;
+function resetIcon() {
+	chrome.tabs.getSelected(null, function(tab) {
+		// show the icon only for urls starting with http
+		if (tab.url.indexOf('http') != 0) return;
 
-	function checkForUpdates() {
-		if (workingInterval) return;
-		workingInterval = true;
-
-		chrome.tabs.getSelected(null, function(tab) {
-			// only ask the server if we don't already know news are available
-			if (status[tab.id] == 'news') {
-				workingInterval = false;
+		chrome.storage.sync.get('shared_urls', function(result) {
+			// empty result if nothing has been shared yet
+			if (!result.shared_urls) {
+				showReadyIndicatorIcon(tab.id);
 				return;
 			}
 
-			chrome.storage.sync.get('updated', function(result) {
-				var updated;
-				if (result.updated) {
-					updated = result.updated;
-				} else {
-					updated = 0;
-				}
+			// if url has been shared before
+			if (result.shared_urls.hasOwnProperty(tab.url)) {
+				showSuccessIndicatorIcon(tab.id);
+				return;
+			}
 
-				// get last update from the kshare server
-				var xhr = new XMLHttpRequest();
-				xhr.open("GET", getServer()+"json?op=updated&ns=" + settings.get('namespace'), false);
-				xhr.send();
-				var resp = JSON.parse(xhr.responseText);
-
-				// so, are there any news?
-				if (updated<resp.last_update) {
-					chrome.storage.sync.set({'updated': resp.last_update, 'news': true}, function() {
-						resetIcon();
-						workingInterval = false;
-					});
-				} else {
-					workingInterval = false;
-				}
-			});
+			// if automatic news check is active
+			if (settings.get('check_for_news') == true) {
+				chrome.storage.sync.get('news', function(result) {
+					// there are news
+					if (result.news == true) {
+						showNewsIndicatorIcon(tab.id);
+					} else {
+						showReadyIndicatorIcon(tab.id);
+						// checkForUpdates is called every 60s
+						if (!intervalListener) {
+							intervalListener = setInterval(checkForUpdates, 60000);
+						}
+					}
+				});
+			} else {
+				// new check is inactive
+				showReadyIndicatorIcon(tab.id);
+			}
 		});
-	}
+	});
+}
+
+// true if checkForUpdates is current active ... not threadsafe
+var workingInterval = false;
+
+function checkForUpdates() {
+	if (workingInterval) return;
+	workingInterval = true;
+
+	chrome.tabs.getSelected(null, function(tab) {
+		chrome.storage.sync.get('updated', function(result) {
+			var updated;
+			if (result.updated) {
+				updated = result.updated;
+			} else {
+				updated = 0;
+			}
+
+			// get last update from the kshare server
+			var xhr = new XMLHttpRequest();
+			xhr.open("GET", getServer()+"json?op=updated&ns=" + settings.get('namespace'), false);
+			xhr.send();
+			var resp = JSON.parse(xhr.responseText);
+
+			// so, are there any news?
+			if (updated<resp.last_update) {
+				chrome.storage.sync.set({'updated': resp.last_update, 'news': true}, function() {
+					resetIcon();
+					console.log("disable news check");
+					window.clearInterval (intervalListener);
+					workingInterval = false;
+				});
+			} else {
+				workingInterval = false;
+			}
+		});
+	});
 }
 
 
@@ -131,6 +167,11 @@ function sendPageToShare(url, tabId) {
 			if (xhr.status == 200) {
 				if (xhr.responseText.indexOf('0') > -1) {
 					showSuccessIndicatorIcon(tabId);
+
+					// store current url as shared
+					chrome.tabs.getSelected(null, function(tab) {
+						addURLtoStorage(tab.url);
+					});
 				} else {
 					showErrorIndicatorIcon(tabId);
 				}
@@ -180,7 +221,6 @@ function getServer() {
 }
 
 function showReadyIndicatorIcon(tabId) {
-	status[tabId] = 'ready';
 	chrome.pageAction.setIcon({
 		tabId : tabId,
 		path : 'comic_16x16.png'
@@ -189,7 +229,6 @@ function showReadyIndicatorIcon(tabId) {
 }
 
 function showNewsIndicatorIcon(tabId) {
-	status[tabId] = 'news';
 	chrome.pageAction.setIcon({
 		tabId : tabId,
 		path : 'news_16x16.png'
@@ -198,7 +237,6 @@ function showNewsIndicatorIcon(tabId) {
 }
 
 function showErrorIndicatorIcon(tabId) {
-	status[tabId] = 'error';
 	chrome.pageAction.setIcon({
 		tabId : tabId,
 		path : 'error_16x16.png'
@@ -207,7 +245,6 @@ function showErrorIndicatorIcon(tabId) {
 }
 
 function showSuccessIndicatorIcon(tabId) {
-	status[tabId] = 'success';
 	chrome.pageAction.setIcon({
 		tabId : tabId,
 		path : 'ok_16x16.png'
@@ -216,7 +253,6 @@ function showSuccessIndicatorIcon(tabId) {
 }
 
 function showLoadingIndicatorIcon(tabId) {
-	status[tabId] = 'loading';
 	chrome.pageAction.setIcon({
 		tabId : tabId,
 		path : 'loading_16x16.png'
