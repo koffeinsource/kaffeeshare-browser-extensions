@@ -6,20 +6,20 @@ var settings = new Store('settings', {
 	'check_for_news': ''
 });
 
-// use 'ready', 'loading', 'success', 'error', 'news' as valid states
-var status;
+// for the news check
+var intervalListener;
 
 chrome.tabs.onActivated.addListener (resetIcon);
 chrome.tabs.onUpdated.addListener (resetIcon);
 chrome.pageAction.onClicked.addListener (iconClick);
 
-chrome.commands.onCommand.addListener(function(command) {
+chrome.commands.onCommand.addListener (function(command) {
 	if(command == "share") {
 		sharePage();
 	}
 });
 
-chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
+chrome.extension.onMessage.addListener (function(request, sender, sendResponse) {
 	if (request.share_page) {
 		sharePage();
 	}
@@ -28,37 +28,91 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 	}
 });
 
+function addURLtoStorage(url) {
+	chrome.storage.sync.get('shared_urls', function(result) {
+		var asoc;
+		if (result.shared_urls) {
+			asoc = result.shared_urls;
+		} else {
+			// DB empty
+			asoc = {};
+		}
+
+		asoc[url] = true;
+		storeSharedURLs(asoc, 0);
+	});
+}
+
+// recursively called in case of error
+function storeSharedURLs(asoc, counter) {
+	//chrome.storage.sync.clear();
+	chrome.storage.sync.set({'shared_urls': asoc}, function() {
+		// save failed?
+		if ( chrome.runtime.lastError && counter < 10) {
+
+			// ok let's delete one random item from the shared urls
+			// this may delete the new url, but let us hope for the best
+			rdnnumber = Math.floor(Math.random()*asoc.length);
+			i = 0;
+			for (var key in asoc) {
+				if (i == rdnnumber) delete asoc[key];
+				++i;
+			}
+
+			// retry to save data
+			storeSharedURLs(asoc, counter+1);
+		}
+	});
+}
+
 function resetIcon() {
 	chrome.tabs.getSelected(null, function(tab) {
 		// show the icon only for urls starting with http
 		if (tab.url.indexOf('http') != 0) return;
 
-		// keep icon if it is loding, success, or error
-		if (status == 'loading' || status == 'success' || status == 'error') return;
-		if (settings.get('check_for_news') == true) {
-			chrome.storage.sync.get('news', function(result) {
-				if (result.news == true) {
-					showNewsIndicatorIcon(tab.id);
-				} else {
-					showReadyIndicatorIcon(tab.id);
-				}
-			});
-		} else {
-			showReadyIndicatorIcon(tab.id);
-		}
+		chrome.storage.sync.get('shared_urls', function(result) {
+			// empty result if nothing has been shared yet
+			if (!result.shared_urls) {
+				showReadyIndicatorIcon(tab.id);
+				return;
+			}
+
+			// if url has been shared before
+			if (result.shared_urls.hasOwnProperty(tab.url)) {
+				showSuccessIndicatorIcon(tab.id);
+				return;
+			}
+
+			// if automatic news check is active
+			if (settings.get('check_for_news') == true) {
+				chrome.storage.sync.get('news', function(result) {
+					// there are news
+					if (result.news == true) {
+						showNewsIndicatorIcon(tab.id);
+					} else {
+						showReadyIndicatorIcon(tab.id);
+						// checkForUpdates is called every 60s
+						if (!intervalListener) {
+							intervalListener = setInterval(checkForUpdates, 60000);
+						}
+					}
+				});
+			} else {
+				// new check is inactive
+				showReadyIndicatorIcon(tab.id);
+			}
+		});
 	});
 }
 
-if (settings.get('check_for_news') == true) {
-	// checkForUpdates is called every 30s
-	setInterval(checkForUpdates, 60000);
-	// true if checkForUpdates is current active ... not threadsafe
-	var workingInterval = false;
+// true if checkForUpdates is current active ... not threadsafe
+var workingInterval = false;
 
-	function checkForUpdates() {
-		if (workingInterval) return;
-		workingInterval = true;
+function checkForUpdates() {
+	if (workingInterval) return;
+	workingInterval = true;
 
+	chrome.tabs.getSelected(null, function(tab) {
 		chrome.storage.sync.get('updated', function(result) {
 			var updated;
 			if (result.updated) {
@@ -77,13 +131,15 @@ if (settings.get('check_for_news') == true) {
 			if (updated<resp.last_update) {
 				chrome.storage.sync.set({'updated': resp.last_update, 'news': true}, function() {
 					resetIcon();
+					console.log("disable news check");
+					window.clearInterval (intervalListener);
 					workingInterval = false;
 				});
 			} else {
 				workingInterval = false;
 			}
 		});
-	}
+	});
 }
 
 
@@ -111,6 +167,11 @@ function sendPageToShare(url, tabId) {
 			if (xhr.status == 200) {
 				if (xhr.responseText.indexOf('0') > -1) {
 					showSuccessIndicatorIcon(tabId);
+
+					// store current url as shared
+					chrome.tabs.getSelected(null, function(tab) {
+						addURLtoStorage(tab.url);
+					});
 				} else {
 					showErrorIndicatorIcon(tabId);
 				}
@@ -160,7 +221,6 @@ function getServer() {
 }
 
 function showReadyIndicatorIcon(tabId) {
-	status = 'ready';
 	chrome.pageAction.setIcon({
 		tabId : tabId,
 		path : 'comic_16x16.png'
@@ -169,7 +229,6 @@ function showReadyIndicatorIcon(tabId) {
 }
 
 function showNewsIndicatorIcon(tabId) {
-	status = 'news';
 	chrome.pageAction.setIcon({
 		tabId : tabId,
 		path : 'news_16x16.png'
@@ -178,7 +237,6 @@ function showNewsIndicatorIcon(tabId) {
 }
 
 function showErrorIndicatorIcon(tabId) {
-	status = 'error';
 	chrome.pageAction.setIcon({
 		tabId : tabId,
 		path : 'error_16x16.png'
@@ -187,7 +245,6 @@ function showErrorIndicatorIcon(tabId) {
 }
 
 function showSuccessIndicatorIcon(tabId) {
-	status = 'success';
 	chrome.pageAction.setIcon({
 		tabId : tabId,
 		path : 'ok_16x16.png'
@@ -196,7 +253,6 @@ function showSuccessIndicatorIcon(tabId) {
 }
 
 function showLoadingIndicatorIcon(tabId) {
-	status='loading';
 	chrome.pageAction.setIcon({
 		tabId : tabId,
 		path : 'loading_16x16.png'
