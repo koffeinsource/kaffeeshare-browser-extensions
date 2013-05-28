@@ -13,6 +13,7 @@
       <preference id="kaffeeshare-url-pref" name="kaffeeshare.kaffeeshare-url" type="string"/>
       <preference id="kaffeeshare-ns-pref" name="kaffeeshare.kaffeeshare-ns" type="string"/>
       <preference id="kaffeeshare-http-pref" name="kaffeeshare.kaffeeshare-http" type="bool"/>
+      <preference id="kaffeeshare-news-pref" name="kaffeeshare.kaffeeshare-news" type="bool"/>
     </preferences>
  
     <vbox>
@@ -27,6 +28,9 @@
       </hbox>
       <hbox align="center">
         <checkbox label="&kaffeeshare.http;" preference="kaffeeshare-http-pref" checked="false"/>
+      </hbox>
+      <hbox align="center">
+        <checkbox label="&kaffeeshare.news;" preference="kaffeeshare-news-pref" checked="true"/>
       </hbox>
     </vbox>
   </prefpane>
