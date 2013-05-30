@@ -14,15 +14,20 @@ KaffeeShareChrome.BrowserOverlay = {
 	url : "",
 	ns : "",
 	http : false,
+	news : false,
 	stringBundle : null,
 	iconAlreadyClicked : false,
 	doubleClickTimer : null,
+	storage : null,
+	newsWorker : null,
+	newsAvail : false,
+	lastNewsUpdate : 0,
 
 	/**
 	 * The icon is clicked.
 	 */
 	iconClick : function(aEvent) {
-		
+
 		if(KaffeeShareChrome.BrowserOverlay.url == "" || KaffeeShareChrome.BrowserOverlay.ns == "" ) {
 			return;
 		}
@@ -39,6 +44,7 @@ KaffeeShareChrome.BrowserOverlay = {
 			currentBrowser.selectedTab = tab;
 
 			KaffeeShareChrome.BrowserOverlay.iconAlreadyClicked = false;
+			KaffeeShareChrome.BrowserOverlay.newsAvail = false;
 			return;
 		}
 
@@ -67,7 +73,7 @@ KaffeeShareChrome.BrowserOverlay = {
 				// create an observer instance
 				// the function is called if the target is changed
 				var observer = new MutationObserver(function(mutations) {
-					KaffeeShareChrome.BrowserOverlay.reset();
+					KaffeeShareChrome.BrowserOverlay.resetIcon();
 					observer.disconnect();
 				});
 
@@ -89,7 +95,7 @@ KaffeeShareChrome.BrowserOverlay = {
 		// Prepare request
 		var request = new XMLHttpRequest();
 		request.open("GET", shareUrl, true);
-		
+
 		// Set response function
 		request.onreadystatechange = function (oEvent) {
 			try {
@@ -98,7 +104,7 @@ KaffeeShareChrome.BrowserOverlay = {
 					
 					if (request.status === 200) {
 						if (request.responseText == "0") {
-							KaffeeShareChrome.BrowserOverlay.ok();
+							KaffeeShareChrome.BrowserOverlay.success();
 						} else {
 							var error = KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.error.server");
 							KaffeeShareChrome.BrowserOverlay.error(error);
@@ -110,7 +116,7 @@ KaffeeShareChrome.BrowserOverlay = {
 				KaffeeShareChrome.BrowserOverlay.error(error);
 			}
 		};
-		
+
 		// Send request
 		request.send(null);
 
@@ -118,8 +124,25 @@ KaffeeShareChrome.BrowserOverlay = {
 		var iOService = Components.classes["@mozilla.org/network/io-service;1"]
 						.getService(Components.interfaces.nsIIOService);
 		gBrowser.selectedTab.kaffeeshare_lastUrl = iOService.newURI(urltoshare, null, null);
-		
+
 		KaffeeShareChrome.BrowserOverlay.loading();
+	},
+
+	/**
+	 * Handle an icon reset.
+	 */
+	resetIcon : function() {
+
+		if(KaffeeShareChrome.BrowserOverlay.url == "") {
+			KaffeeShareChrome.BrowserOverlay.error(KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.error.url"));
+		} else if(KaffeeShareChrome.BrowserOverlay.ns == "") {
+			KaffeeShareChrome.BrowserOverlay.error(KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.error.ns"));
+		} else if(KaffeeShareChrome.BrowserOverlay.newsAvail) {
+			KaffeeShareChrome.BrowserOverlay.readyNews();
+		} else {
+			KaffeeShareChrome.BrowserOverlay.ready();
+		}
+
 	},
 
 	/**
@@ -131,8 +154,8 @@ KaffeeShareChrome.BrowserOverlay = {
 			// Check, weather the selected tab has been shared
 			if(uri.equals(gBrowser.selectedTab.kaffeeshare_lastUrl)) {
 				var state = gBrowser.selectedTab.kaffeeshare_state;
-				if(state == "ok") {
-					KaffeeShareChrome.BrowserOverlay.ok();
+				if(state == "success") {
+					KaffeeShareChrome.BrowserOverlay.success();
 					return;
 				} else if(state == "error") {
 					KaffeeShareChrome.BrowserOverlay.error();
@@ -144,28 +167,13 @@ KaffeeShareChrome.BrowserOverlay = {
 			gBrowser.selectedTab.kaffeeshare_state = ""
 		}
 
-		KaffeeShareChrome.BrowserOverlay.update();
+		KaffeeShareChrome.BrowserOverlay.resetIcon();
 	},
 
 	/**
-	 * Handle a settings update.
+	 * Handle ready.
 	 */
-	update : function() {
-
-		if(KaffeeShareChrome.BrowserOverlay.url == "") {
-			KaffeeShareChrome.BrowserOverlay.error(KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.error.url"));
-		} else if(KaffeeShareChrome.BrowserOverlay.ns == "") {
-			KaffeeShareChrome.BrowserOverlay.error(KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.error.ns"));
-		} else {
-			KaffeeShareChrome.BrowserOverlay.reset();
-		}
-		
-	},
-	
-	/**
-	 * Handle a loading.
-	 */
-	reset : function() {
+	ready : function() {
 		var img = document.getElementById("kaffeeshare-share-button");
 		img.setAttribute("src", "chrome://kaffeeshare/skin/comic_16x16.png");
 		img.setAttribute("tooltiptext", KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.sharepage"));
@@ -174,36 +182,47 @@ KaffeeShareChrome.BrowserOverlay = {
 	},
 
 	/**
-	 * Handle an error.
+	 * Handle error.
 	 */
 	error : function(msg) {
 		var img = document.getElementById("kaffeeshare-share-button");
 		img.setAttribute("src", "chrome://kaffeeshare/skin/error_16x16.png");
 		img.setAttribute("tooltiptext", msg);
-		
+
 		gBrowser.selectedTab.kaffeeshare_state = "error";
 	},
 
 	/**
-	 * Handle a ok.
+	 * Handle success.
 	 */
-	ok : function() {
+	success : function() {
 		var img = document.getElementById("kaffeeshare-share-button");
 		img.setAttribute("src", "chrome://kaffeeshare/skin/ok_16x16.png");
-		img.setAttribute("tooltiptext", KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.ok"));
-		
-		gBrowser.selectedTab.kaffeeshare_state = "ok";
+		img.setAttribute("tooltiptext", KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.success"));
+
+		gBrowser.selectedTab.kaffeeshare_state = "success";
 	},
 
 	/**
-	 * Handle a loading.
+	 * Handle loading.
 	 */
 	loading : function() {
 		var img = document.getElementById("kaffeeshare-share-button");
 		img.setAttribute("src", "chrome://kaffeeshare/skin/loading_16x16.png");
 		img.setAttribute("tooltiptext", KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.loading"));
-		
+
 		gBrowser.selectedTab.kaffeeshare_state = "loading";
+	},
+
+	/**
+	 * Handle news avail.
+	 */
+	readyNews : function() {
+		var img = document.getElementById("kaffeeshare-share-button");
+		img.setAttribute("src", "chrome://kaffeeshare/skin/news_16x16.png");
+		img.setAttribute("tooltiptext", KaffeeShareChrome.BrowserOverlay.stringBundle.getString("kaffeeshare.news"));
+
+		gBrowser.selectedTab.kaffeeshare_state = "news";
 	},
 
 	/**
@@ -222,7 +241,7 @@ KaffeeShareChrome.BrowserOverlay = {
 	/**
 	 * Gets the server url.
 	 */
-	getServer : function(aEvent) {
+	getServer : function() {
 
 		var protocol = "https://";
 		if(KaffeeShareChrome.BrowserOverlay.http) {
@@ -231,6 +250,45 @@ KaffeeShareChrome.BrowserOverlay = {
 
 		var url = protocol + KaffeeShareChrome.BrowserOverlay.url;
 		return url;
+	},
+
+	/**
+	 * Run a news worker thread.
+	 */
+	runNewsWorker : function() {
+
+		KaffeeShareChrome.BrowserOverlay.newsWorker = new Worker("chrome://kaffeeshare/content/newsWorker.js");
+
+		KaffeeShareChrome.BrowserOverlay.newsWorker.onmessage = function(event) {
+			KaffeeShareChrome.BrowserOverlay.onworkermessage.call(KaffeeShareChrome.BrowserOverlay, event);
+		};
+
+		var data = {
+			"server": KaffeeShareChrome.BrowserOverlay.getServer(),
+			"ns": KaffeeShareChrome.BrowserOverlay.ns,
+			"updated" : KaffeeShareChrome.BrowserOverlay.lastNewsUpdate
+		};
+		Application.console.log("Kaffeeshare |  Run news worker");
+		KaffeeShareChrome.BrowserOverlay.newsWorker.postMessage(data);
+	},
+
+	/**
+	 * Stops a news worker thread.
+	 */
+	stopNewsWorker : function() {
+		Application.console.log("Kaffeeshare |  Terminate news worker");
+		KaffeeShareChrome.BrowserOverlay.newsWorker.terminate();
+	},
+
+	/**
+	 * Receive messages from the worker.
+	 */
+	onworkermessage: function(event) {
+		Application.console.log("Kaffeeshare | Receive msg from news worker: " + event.data);
+
+		KaffeeShareChrome.BrowserOverlay.lastNewsUpdate = event.data;
+		KaffeeShareChrome.BrowserOverlay.newsAvail = true;
+		KaffeeShareChrome.BrowserOverlay.resetIcon();
 	},
 
 	/**
@@ -253,25 +311,50 @@ KaffeeShareChrome.BrowserOverlay = {
 		KaffeeShareChrome.BrowserOverlay.prefs.QueryInterface(Components.interfaces.nsIPrefBranch2);
 		KaffeeShareChrome.BrowserOverlay.prefs.addObserver("", this, false);
 		KaffeeShareChrome.BrowserOverlay.prefs.QueryInterface(Components.interfaces.nsIPrefBranch);
-		
+
 		// Set string bundle
 		KaffeeShareChrome.BrowserOverlay.stringBundle = document.getElementById("kaffeeshare-string-bundle");
 
-		// Get URL and namespace
+		// Get preferences
 		KaffeeShareChrome.BrowserOverlay.url = KaffeeShareChrome.BrowserOverlay.prefs.getCharPref("kaffeeshare-url");
 		KaffeeShareChrome.BrowserOverlay.ns = KaffeeShareChrome.BrowserOverlay.prefs.getCharPref("kaffeeshare-ns");
 		KaffeeShareChrome.BrowserOverlay.http = KaffeeShareChrome.BrowserOverlay.prefs.getBoolPref("kaffeeshare-http");
-		
-		KaffeeShareChrome.BrowserOverlay.update();
+		KaffeeShareChrome.BrowserOverlay.news = KaffeeShareChrome.BrowserOverlay.prefs.getBoolPref("kaffeeshare-news");
+
+		// Get persistent data storage
+		var url = "https://kaffee.share";
+		var ios = Components.classes["@mozilla.org/network/io-service;1"]
+					.getService(Components.interfaces.nsIIOService);
+		var ssm = Components.classes["@mozilla.org/scriptsecuritymanager;1"]
+					.getService(Components.interfaces.nsIScriptSecurityManager);
+		var dsm = Components.classes["@mozilla.org/dom/storagemanager;1"]
+					.getService(Components.interfaces.nsIDOMStorageManager);
+
+		var uri = ios.newURI(url, "", null);
+		var principal = ssm.getCodebasePrincipal(uri);
+		KaffeeShareChrome.BrowserOverlay.storage = dsm.getLocalStorageForPrincipal(principal, "");
+
+		KaffeeShareChrome.BrowserOverlay.lastNewsUpdate = parseInt(KaffeeShareChrome.BrowserOverlay.storage.getItem("update"));
+
+		if(KaffeeShareChrome.BrowserOverlay.news) {
+			KaffeeShareChrome.BrowserOverlay.runNewsWorker();
+		}
+		KaffeeShareChrome.BrowserOverlay.resetIcon();
 	},
-	
+
 	/**
-	 * Clean up after ourselves and save the prefs.
+	 * Clean up after ourselves and save the storage items.
 	 */
 	shutdown : function() {
+		if(KaffeeShareChrome.BrowserOverlay.newsWorker != null) {
+			KaffeeShareChrome.BrowserOverlay.stopNewsWorker();
+		}
 		KaffeeShareChrome.BrowserOverlay.prefs.removeObserver("", this);
+		
+		KaffeeShareChrome.BrowserOverlay.storage.setItem("update", KaffeeShareChrome.BrowserOverlay.lastNewsUpdate);
+
 	},
-	
+
 	/**
 	 * Called when events occur on the preferences.
 	 */
@@ -291,12 +374,22 @@ KaffeeShareChrome.BrowserOverlay = {
 			case "kaffeeshare-http":
 				KaffeeShareChrome.BrowserOverlay.http = KaffeeShareChrome.BrowserOverlay.prefs.getBoolPref("kaffeeshare-http");
 				break;
+			case "kaffeeshare-news":
+				KaffeeShareChrome.BrowserOverlay.news = KaffeeShareChrome.BrowserOverlay.prefs.getBoolPref("kaffeeshare-news");
+				if(KaffeeShareChrome.BrowserOverlay.news) {
+					KaffeeShareChrome.BrowserOverlay.runNewsWorker();
+				} else {
+					KaffeeShareChrome.BrowserOverlay.stopNewsWorker();
+				}
+				break;
 		}
 
 	}
+
 };
 
 
 window.addEventListener("load", function(e) { KaffeeShareChrome.BrowserOverlay.startup(); }, false);
 window.addEventListener("unload", function(e) { KaffeeShareChrome.BrowserOverlay.shutdown(); }, false);
 window.addEventListener('keydown', function(e) { KaffeeShareChrome.BrowserOverlay.keydown(e); }, false);
+
