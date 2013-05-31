@@ -51,7 +51,7 @@ KaffeeShareChrome.BrowserOverlay = {
 		KaffeeShareChrome.BrowserOverlay.iconAlreadyClicked = true;
 		KaffeeShareChrome.BrowserOverlay.doubleClickTimer = setTimeout(function () {
 				clearTimeout(KaffeeShareChrome.BrowserOverlay.doubleClickTimer);
-				KaffeeShareChrome.BrowserOverlay.alreadyClicked = false;
+				KaffeeShareChrome.BrowserOverlay.iconAlreadyClicked = false;
 				KaffeeShareChrome.BrowserOverlay.share();
 			}, 250);
 	},
@@ -167,6 +167,9 @@ KaffeeShareChrome.BrowserOverlay = {
 			gBrowser.selectedTab.kaffeeshare_state = ""
 		}
 
+		if(KaffeeShareChrome.BrowserOverlay.news && !KaffeeShareChrome.BrowserOverlay.newsAvail) {
+			KaffeeShareChrome.BrowserOverlay.runNewsWorker();
+		}
 		KaffeeShareChrome.BrowserOverlay.resetIcon();
 	},
 
@@ -257,6 +260,10 @@ KaffeeShareChrome.BrowserOverlay = {
 	 */
 	runNewsWorker : function() {
 
+		if(KaffeeShareChrome.BrowserOverlay.newsWorker != null) {
+			return;
+		}
+		
 		KaffeeShareChrome.BrowserOverlay.newsWorker = new Worker("chrome://kaffeeshare/content/newsWorker.js");
 
 		KaffeeShareChrome.BrowserOverlay.newsWorker.onmessage = function(event) {
@@ -278,6 +285,7 @@ KaffeeShareChrome.BrowserOverlay = {
 	stopNewsWorker : function() {
 		Application.console.log("Kaffeeshare |  Terminate news worker");
 		KaffeeShareChrome.BrowserOverlay.newsWorker.terminate();
+		KaffeeShareChrome.BrowserOverlay.newsWorker = null;
 	},
 
 	/**
@@ -288,6 +296,7 @@ KaffeeShareChrome.BrowserOverlay = {
 
 		KaffeeShareChrome.BrowserOverlay.lastNewsUpdate = event.data;
 		KaffeeShareChrome.BrowserOverlay.newsAvail = true;
+		KaffeeShareChrome.BrowserOverlay.stopNewsWorker();
 		KaffeeShareChrome.BrowserOverlay.resetIcon();
 	},
 
