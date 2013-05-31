@@ -51,7 +51,7 @@ KaffeeShareChrome.BrowserOverlay = {
 		KaffeeShareChrome.BrowserOverlay.iconAlreadyClicked = true;
 		KaffeeShareChrome.BrowserOverlay.doubleClickTimer = setTimeout(function () {
 				clearTimeout(KaffeeShareChrome.BrowserOverlay.doubleClickTimer);
-				KaffeeShareChrome.BrowserOverlay.alreadyClicked = false;
+				KaffeeShareChrome.BrowserOverlay.iconAlreadyClicked = false;
 				KaffeeShareChrome.BrowserOverlay.share();
 			}, 250);
 	},

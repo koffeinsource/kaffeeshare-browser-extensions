@@ -7,7 +7,7 @@
     <em:id>kaffeshare@kaffeeshare.appspot.com</em:id>
     <em:name>KaffeeShare</em:name>
     <em:description>This extension adds a icon to the urlbar which allows you to share the page link via KaffeeShare.</em:description>
-    <em:version>0.4.0</em:version>
+    <em:version>0.4.1</em:version>
     <em:creator>KaffeeShare Team</em:creator>
     <em:homepageURL>http://kaffeeshare.appspot.com/</em:homepageURL>
     <em:iconURL>chrome://kaffeeshare/skin/comic_30x30.png</em:iconURL>
