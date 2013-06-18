@@ -275,7 +275,7 @@ KaffeeShareChrome.BrowserOverlay = {
 			"ns": KaffeeShareChrome.BrowserOverlay.ns,
 			"updated" : KaffeeShareChrome.BrowserOverlay.lastNewsUpdate
 		};
-		Application.console.log("Kaffeeshare |  Run news worker");
+		Application.console.log("Kaffeeshare |  Run news worker: " + data.updated);
 		KaffeeShareChrome.BrowserOverlay.newsWorker.postMessage(data);
 	},
 
@@ -296,7 +296,6 @@ KaffeeShareChrome.BrowserOverlay = {
 
 		KaffeeShareChrome.BrowserOverlay.lastNewsUpdate = event.data;
 		KaffeeShareChrome.BrowserOverlay.newsAvail = true;
-		KaffeeShareChrome.BrowserOverlay.stopNewsWorker();
 		KaffeeShareChrome.BrowserOverlay.resetIcon();
 	},
 
@@ -344,6 +343,9 @@ KaffeeShareChrome.BrowserOverlay = {
 		KaffeeShareChrome.BrowserOverlay.storage = dsm.getLocalStorageForPrincipal(principal, "");
 
 		KaffeeShareChrome.BrowserOverlay.lastNewsUpdate = parseInt(KaffeeShareChrome.BrowserOverlay.storage.getItem("update"));
+		if(KaffeeShareChrome.BrowserOverlay.lastNewsUpdate == Number.NaN) {
+			KaffeeShareChrome.BrowserOverlay.lastNewsUpdate = 0;
+		}
 
 		if(KaffeeShareChrome.BrowserOverlay.news) {
 			KaffeeShareChrome.BrowserOverlay.runNewsWorker();
@@ -358,10 +360,11 @@ KaffeeShareChrome.BrowserOverlay = {
 		if(KaffeeShareChrome.BrowserOverlay.newsWorker != null) {
 			KaffeeShareChrome.BrowserOverlay.stopNewsWorker();
 		}
-		KaffeeShareChrome.BrowserOverlay.prefs.removeObserver("", this);
 		
-		KaffeeShareChrome.BrowserOverlay.storage.setItem("update", KaffeeShareChrome.BrowserOverlay.lastNewsUpdate);
 
+		Application.console.log("Kaffeeshare | Shutdown: " + KaffeeShareChrome.BrowserOverlay.lastNewsUpdate.toString());
+		KaffeeShareChrome.BrowserOverlay.storage.setItem("update", KaffeeShareChrome.BrowserOverlay.lastNewsUpdate.toString());
+		KaffeeShareChrome.BrowserOverlay.prefs.removeObserver("", this);
 	},
 
 	/**
