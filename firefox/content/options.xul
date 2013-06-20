@@ -30,7 +30,7 @@
         <checkbox label="&kaffeeshare.http;" preference="kaffeeshare-http-pref" checked="false"/>
       </hbox>
       <hbox align="center">
-        <checkbox label="&kaffeeshare.news;" preference="kaffeeshare-news-pref" checked="true"/>
+        <checkbox label="&kaffeeshare.news;" preference="kaffeeshare-news-pref" checked="false"/>
       </hbox>
     </vbox>
   </prefpane>
