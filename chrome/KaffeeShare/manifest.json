@@ -18,7 +18,7 @@
   "commands": {
     "share": {
       "suggested_key": {
-        "default": "Ctrl+1"
+        "default": "Ctrl+Shift+."
       },
       "description": "Share the current tab."
     }

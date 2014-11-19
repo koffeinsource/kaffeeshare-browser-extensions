@@ -1,6 +1,6 @@
 // avoid conficts with other js frameworks
 jQuery.noConflict();
-
+/*
 window.addEventListener('keydown', function(event) {
 	// Bind to both command (for Mac) and control (for Win/Linux)
 	var modifier = event.ctrlKey || event.metaKey;
@@ -14,3 +14,4 @@ window.addEventListener('keydown', function(event) {
 		});
 	}
 }, false);
+*/
