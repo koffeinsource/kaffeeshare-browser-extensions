@@ -29,7 +29,7 @@ chrome.extension.onMessage.addListener (function(request, sender, sendResponse) 
 });
 
 function addURLtoStorage(url) {
-	chrome.storage.sync.get('shared_urls', function(result) {
+	chrome.storage.local.get('shared_urls', function(result) {
 		var asoc;
 		if (result.shared_urls) {
 			asoc = result.shared_urls;
@@ -45,20 +45,17 @@ function addURLtoStorage(url) {
 
 // recursively called in case of error
 function storeSharedURLs(asoc, counter) {
-	//chrome.storage.sync.clear();
-	chrome.storage.sync.set({'shared_urls': asoc}, function() {
+	//chrome.storage.local.clear();
+	chrome.storage.local.set({'shared_urls': asoc}, function() {
 		// save failed?
 		if ( chrome.runtime.lastError && counter < 10) {
+			// we expect it to be full, so lets randomly delete something
 
 			// ok let's delete one random item from the shared urls
 			// this may delete the new url, but let us hope for the best
-			rdnnumber = Math.floor(Math.random()*asoc.length);
-			i = 0;
-			for (var key in asoc) {
-				if (i == rdnnumber) delete asoc[key];
-				++i;
-			}
-
+			var keys = Object.keys(assoc);
+			delete assoc[keys[Math.floor(keys.length * Math.random())]];
+			
 			// retry to save data
 			storeSharedURLs(asoc, counter+1);
 		}
@@ -70,7 +67,7 @@ function resetIcon() {
 		// show the icon only for urls starting with http
 		if (tab.url.indexOf('http') != 0) return;
 
-		chrome.storage.sync.get('shared_urls', function(result) {
+		chrome.storage.local.get('shared_urls', function(result) {
 			// empty result if nothing has been shared yet
 			if (!result.shared_urls) {
 				showReadyIndicatorIcon(tab.id);
@@ -85,7 +82,7 @@ function resetIcon() {
 
 			// if automatic news check is active
 			if (settings.get('check_for_news') == true) {
-				chrome.storage.sync.get('news', function(result) {
+				chrome.storage.local.get('news', function(result) {
 					// there are news
 					if (result.news == true) {
 						showNewsIndicatorIcon(tab.id);
@@ -113,7 +110,7 @@ function checkForUpdates() {
 	workingInterval = true;
 
 	chrome.tabs.getSelected(null, function(tab) {
-		chrome.storage.sync.get('updated', function(result) {
+		chrome.storage.local.get('updated', function(result) {
 			var updated;
 			if (result.updated) {
 				updated = result.updated;
@@ -129,7 +126,7 @@ function checkForUpdates() {
 
 			// so, are there any news?
 			if (updated<resp.last_update) {
-				chrome.storage.sync.set({'updated': resp.last_update, 'news': true}, function() {
+				chrome.storage.local.set({'updated': resp.last_update, 'news': true}, function() {
 					resetIcon();
 					console.log("disable news check");
 					window.clearInterval (intervalListener);
@@ -191,7 +188,7 @@ function iconClick() {
     if (alreadyClicked) {
         clearTimeout(clickTimer);
 		alreadyClicked = false;
-		chrome.storage.sync.set({'news': false}, function() {
+		chrome.storage.local.set({'news': false}, function() {
 			resetIcon();
 			url = getServer() + "html.html?ns=" + settings.get('namespace');
 			window.open(url, '_blank');
