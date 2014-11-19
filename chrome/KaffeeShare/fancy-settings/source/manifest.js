@@ -1,4 +1,4 @@
-// SAMPLE
+// Actual extensions settings
 this.manifest = {
     "name": "KaffeeShare",
     "icon": "../../comic_30x30.png",
@@ -46,6 +46,13 @@ this.manifest = {
             "name": "check_for_news",
             "type": "checkbox",
             "label": i18n.get("news_label")
+        },
+        {
+            "tab": i18n.get("sharing"),
+            "group": i18n.get("backend"),
+            "name": "double_click_for_share",
+            "type": "checkbox",
+            "label": i18n.get("double_click_label")
         },
         {
             "tab": i18n.get("sharing"),

@@ -3,7 +3,8 @@ var settings = new Store('settings', {
 	'server' : '',
 	'namespace' : '',
 	'https_disabled' : '',
-	'check_for_news': ''
+	'check_for_news': '',
+	'double_click_for_share': ''
 });
 
 // for the news check
@@ -139,7 +140,6 @@ function checkForUpdates() {
 	});
 }
 
-
 function sharePage() {
 	url = getServer() + "oneclickshare?ns=" + settings.get('namespace') + "&url=";
 	chrome.tabs.getSelected(null, function(tab) {
@@ -186,26 +186,41 @@ var clickTimer;
 function iconClick() {
     //Check for previous click. Yes => double click
     if (alreadyClicked) {
-        clearTimeout(clickTimer);
-		alreadyClicked = false;
-		chrome.storage.local.set({'news': false}, function() {
+    	alreadyClicked = false;
+	    clearTimeout(clickTimer);
+	    
+        if (!settings.get('double_click_for_share')) {
 			resetIcon();
 			url = getServer() + "html.html?ns=" + settings.get('namespace');
 			window.open(url, '_blank');
 			window.focus();
-		});
+        } else {
+        	sharePage();
+        }
         return;
     }
 
     alreadyClicked = true;
 
 	// timer will trigger if no second click is done within 250 ms
-    clickTimer = setTimeout(function () {
-		sharePage();
-
-	    clearTimeout(clickTimer);
-	    alreadyClicked = false;
-	}, 250);
+    if (settings.get('double_click_for_share')) {
+        clickTimer = setTimeout(function () {
+        	alreadyClicked = false;
+    	    clearTimeout(clickTimer);
+    	    
+			resetIcon();
+			url = getServer() + "html.html?ns=" + settings.get('namespace');
+			window.open(url, '_blank');
+			window.focus();
+    	}, 250);
+    } else {
+        clickTimer = setTimeout(function () {
+    	    alreadyClicked = false;
+    	    clearTimeout(clickTimer);
+    	    
+    		sharePage();
+    	}, 250);    	
+    }
 }
 
 function getServer() {
