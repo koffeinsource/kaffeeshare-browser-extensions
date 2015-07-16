@@ -56,7 +56,7 @@ function storeSharedURLs(asoc, counter) {
 			// this may delete the new url, but let us hope for the best
 			var keys = Object.keys(assoc);
 			delete assoc[keys[Math.floor(keys.length * Math.random())]];
-			
+
 			// retry to save data
 			storeSharedURLs(asoc, counter+1);
 		}
@@ -141,9 +141,8 @@ function checkForUpdates() {
 }
 
 function sharePage() {
-	url = getServer() + "oneclickshare?ns=" + settings.get('namespace') + "&url=";
+	url = getServer() + "/k/share/json/" + settings.get('namespace') + "/?url=";
 	chrome.tabs.getSelected(null, function(tab) {
-		showLoadingIndicatorIcon(tab.id);
 		chrome.tabs.sendMessage(tab.id, {
 			job : 'getUrlToShare'
 		}, function handler(response) {
@@ -158,27 +157,20 @@ function sharePage() {
 }
 
 function sendPageToShare(url, tabId) {
-	var xhr = new XMLHttpRequest();
-	xhr.onreadystatechange = function(data) {
-		if (xhr.readyState == 4) {
-			if (xhr.status == 200) {
-				if (xhr.responseText.indexOf('0') > -1) {
-					showSuccessIndicatorIcon(tabId);
-
-					// store current url as shared
-					chrome.tabs.getSelected(null, function(tab) {
-						addURLtoStorage(tab.url);
-					});
-				} else {
-					showErrorIndicatorIcon(tabId);
-				}
-			} else {
-				showErrorIndicatorIcon(tabId);
-			}
-		}
-	}
-	xhr.open('GET', url, true);
-	xhr.send();
+	showLoadingIndicatorIcon(tabId);
+	$.ajax({
+		type: "GET",
+		url: url,
+		dataType: 'json'
+	}).done(function(msg) {
+		if (msg.status="ok")
+    		showSuccessIndicatorIcon(tabId);
+		else
+			showErrorIndicatorIcon(tabId);
+	}).fail(function() {
+		showErrorIndicatorIcon(tabId);
+	}).always(function(msg) {
+	});
 }
 
 var alreadyClicked = false;
@@ -188,7 +180,7 @@ function iconClick() {
     if (alreadyClicked) {
     	alreadyClicked = false;
 	    clearTimeout(clickTimer);
-	    
+
         if (!settings.get('double_click_for_share')) {
 			resetIcon();
 			url = getServer() + "html.html?ns=" + settings.get('namespace');
@@ -207,7 +199,7 @@ function iconClick() {
         clickTimer = setTimeout(function () {
         	alreadyClicked = false;
     	    clearTimeout(clickTimer);
-    	    
+
 			resetIcon();
 			url = getServer() + "html.html?ns=" + settings.get('namespace');
 			window.open(url, '_blank');
@@ -217,9 +209,9 @@ function iconClick() {
         clickTimer = setTimeout(function () {
     	    alreadyClicked = false;
     	    clearTimeout(clickTimer);
-    	    
+
     		sharePage();
-    	}, 250);    	
+    	}, 250);
     }
 }
 
