@@ -63,24 +63,26 @@ function storeSharedURLs(asoc, counter) {
 	});
 }
 
+function resetIconNoNews(tab, sharedURLs) {
+	// empty result if nothing has been shared yet
+	if (!sharedURLs.shared_urls) {
+		showReadyIndicatorIcon(tab.id);
+		return
+	}
+
+	// if url has been shared before
+	if (sharedURLs.shared_urls.hasOwnProperty(tab.url)) {
+		showSuccessIndicatorIcon(tab.id);
+	}
+
+	showReadyIndicatorIcon(tab.id);
+}
 function resetIcon() {
 	chrome.tabs.getSelected(null, function(tab) {
 		// show the icon only for urls starting with http
 		if (tab.url.indexOf('http') != 0) return;
 
-		chrome.storage.local.get('shared_urls', function(result) {
-			// empty result if nothing has been shared yet
-			if (!result.shared_urls) {
-				showReadyIndicatorIcon(tab.id);
-				return;
-			}
-
-			// if url has been shared before
-			if (result.shared_urls.hasOwnProperty(tab.url)) {
-				showSuccessIndicatorIcon(tab.id);
-				return;
-			}
-
+		chrome.storage.local.get('shared_urls', function(sharedURLs) {
 			// if automatic news check is active
 			if (settings.get('check_for_news') == true) {
 				chrome.storage.local.get('news', function(result) {
@@ -88,21 +90,21 @@ function resetIcon() {
 					if (result.news == true) {
 						showNewsIndicatorIcon(tab.id);
 					} else {
-						showReadyIndicatorIcon(tab.id);
-						// checkForUpdates is called every 60s
-						if (!intervalListener) {
-							intervalListener = setInterval(checkForUpdates, 60000);
-						}
+						resetIconNoNews(tab, sharedURLs);
 					}
 				});
+				// checkForUpdates is called every 60s
+				if (!intervalListener) {
+					intervalListener = setInterval(checkForUpdates, 60000);
+				}
 			} else {
-				// new check is inactive
-				showReadyIndicatorIcon(tab.id);
+				resetIconNoNews(tab, sharedURLs);
 			}
 		});
 	});
 }
 
+var latestNews = 0;
 // true if checkForUpdates is current active ... not threadsafe
 var workingInterval = false;
 
@@ -120,28 +122,32 @@ function checkForUpdates() {
 			}
 
 			// get last update from the kshare server
-			var xhr = new XMLHttpRequest();
-			xhr.open("GET", getServer()+"json?op=updated&ns=" + settings.get('namespace'), false);
-			xhr.send();
-			var resp = JSON.parse(xhr.responseText);
-
-			// so, are there any news?
-			if (updated<resp.last_update) {
-				chrome.storage.local.set({'updated': resp.last_update, 'news': true}, function() {
-					resetIcon();
-					console.log("disable news check");
-					window.clearInterval (intervalListener);
+			$.ajax({
+				type: "GET",
+				url: getServer()+"k/update/json/" + settings.get('namespace')+"/",
+				dataType: 'json'
+			}).done(function(resp) {
+				//console.log("resp: " + resp.last_update);
+				//console.log("updated: " + updated);
+				// so, are there any news?
+				if (updated<resp.last_update) {
+					chrome.storage.local.set({'updated': resp.last_update, 'news': true}, function() {
+						resetIcon();
+						workingInterval = false;
+						latestNews = resp.last_update;
+					});
+				} else {
 					workingInterval = false;
-				});
-			} else {
-				workingInterval = false;
-			}
+				}
+			}).fail(function() {
+			}).always(function(msg) {
+			});
 		});
 	});
 }
 
 function sharePage() {
-	url = getServer() + "/k/share/json/" + settings.get('namespace') + "/?url=";
+	url = getServer() + "k/share/json/" + settings.get('namespace') + "/?url=";
 	chrome.tabs.getSelected(null, function(tab) {
 		chrome.tabs.sendMessage(tab.id, {
 			job : 'getUrlToShare'
@@ -163,56 +169,66 @@ function sendPageToShare(url, tabId) {
 		url: url,
 		dataType: 'json'
 	}).done(function(msg) {
-		if (msg.status="ok")
+		if (msg.status="ok") {
     		showSuccessIndicatorIcon(tabId);
-		else
+			addURLtoStorage(url);
+		} else {
 			showErrorIndicatorIcon(tabId);
+		}
 	}).fail(function() {
 		showErrorIndicatorIcon(tabId);
 	}).always(function(msg) {
 	});
 }
 
+function openWebView() {
+	url = getServer() + "k/show/www/" + settings.get('namespace');
+	chrome.storage.local.set({'updated': latestNews, 'news': false});
+	resetIcon();
+	window.open(url, '_blank');
+	window.focus();
+}
+
 var alreadyClicked = false;
 var clickTimer;
+
+function handleClick() {
+	clearTimeout(clickTimer);
+	alreadyClicked = false;
+
+	if (settings.get('double_click_for_share')) {
+		openWebView();
+		resetIcon();
+	} else {
+		sharePage();
+	}
+
+}
+
+function handleDoubleClick() {
+	clearTimeout(clickTimer);
+	alreadyClicked = false;
+
+	if (settings.get('double_click_for_share')) {
+		sharePage();
+	} else {
+		openWebView();
+		resetIcon();
+	}
+}
+
 function iconClick() {
     //Check for previous click. Yes => double click
     if (alreadyClicked) {
-    	alreadyClicked = false;
-	    clearTimeout(clickTimer);
-
-        if (!settings.get('double_click_for_share')) {
-			resetIcon();
-			url = getServer() + "/k/show/www/" + settings.get('namespace');
-			window.open(url, '_blank');
-			window.focus();
-        } else {
-        	sharePage();
-        }
-        return;
+		handleDoubleClick();
     }
 
     alreadyClicked = true;
 
 	// timer will trigger if no second click is done within 250 ms
-    if (settings.get('double_click_for_share')) {
-        clickTimer = setTimeout(function () {
-        	alreadyClicked = false;
-    	    clearTimeout(clickTimer);
-
-			resetIcon();
-			url = getServer() + "html.html?ns=" + settings.get('namespace');
-			window.open(url, '_blank');
-			window.focus();
-    	}, 250);
-    } else {
-        clickTimer = setTimeout(function () {
-    	    alreadyClicked = false;
-    	    clearTimeout(clickTimer);
-
-    		sharePage();
-    	}, 250);
-    }
+    clickTimer = setTimeout(function () {
+		handleClick();
+	}, 250);
 }
 
 function getServer() {
