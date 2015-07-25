@@ -183,7 +183,7 @@ function iconClick() {
 
         if (!settings.get('double_click_for_share')) {
 			resetIcon();
-			url = getServer() + "/k/show/html/" + settings.get('namespace');
+			url = getServer() + "/k/show/www/" + settings.get('namespace');
 			window.open(url, '_blank');
 			window.focus();
         } else {
