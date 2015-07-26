@@ -8,7 +8,7 @@ var settings = new Store('settings', {
 });
 
 // disables debug log to console
-//debug.setLevel(0)
+debug.setLevel(0);
 
 // for the news check
 var intervalListener;
@@ -75,7 +75,7 @@ function resetIconNoNews(tab, sharedURLs) {
 	if (!sharedURLs.shared_urls) {
 		debug.log ("no shared urls so far");
 		showReadyIndicatorIcon(tab.id);
-		return
+		return;
 	}
 
 	// if url has been shared before
@@ -93,17 +93,17 @@ function resetIconNoNews(tab, sharedURLs) {
 function resetIcon() {
 	chrome.tabs.getSelected(null, function(tab) {
 		// show the icon only for urls starting with http
-		if (tab.url.indexOf('http') != 0) return;
+		if (tab.url.indexOf('http') !== 0) return;
 
 		chrome.storage.local.get('shared_urls', function(sharedURLs) {
 			debug.log("shared urls so far:");
-			debug.log(sharedURLs)
+			debug.log(sharedURLs);
 			// if automatic news check is active
-			if (settings.get('check_for_news') == true) {
+			if (settings.get('check_for_news') === true) {
 				chrome.storage.local.get('news', function(result) {
 					debug.log("got news state: " + result.news);
 					// there are news
-					if (result.news == true) {
+					if (result.news === true) {
 						debug.log("show news icon");
 						showNewsIndicatorIcon(tab.id);
 					} else {
@@ -175,7 +175,7 @@ function checkForUpdates() {
 
 function openWebView() {
 	url = getServer() + "k/show/www/" + settings.get('namespace');
-	if (settings.get('check_for_news') == true) {
+	if (settings.get('check_for_news') === true) {
 		chrome.storage.local.set({'news': false}, function() {
 			debug.log("enable news check");
 			intervalListener = setInterval(checkForUpdates, 60000);
@@ -209,7 +209,7 @@ function sendPageToShare(url, tab) {
 		url: url,
 		dataType: 'json'
 	}).done(function(msg) {
-		if (msg.status="ok") {
+		if (msg.status=="ok") {
     		showSuccessIndicatorIcon(tab.id);
 			addURLtoStorage(tab.url);
 		} else {
