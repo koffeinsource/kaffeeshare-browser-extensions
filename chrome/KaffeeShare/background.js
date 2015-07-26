@@ -7,6 +7,9 @@ var settings = new Store('settings', {
 	'double_click_for_share': ''
 });
 
+// disables debug log to console
+//debug.setLevel(0)
+
 // for the news check
 var intervalListener;
 
@@ -30,6 +33,7 @@ chrome.extension.onMessage.addListener (function(request, sender, sendResponse) 
 });
 
 function addURLtoStorage(url) {
+	debug.log ("store url: " + url);
 	chrome.storage.local.get('shared_urls', function(result) {
 		var asoc;
 		if (result.shared_urls) {
@@ -60,51 +64,67 @@ function storeSharedURLs(asoc, counter) {
 			// retry to save data
 			storeSharedURLs(asoc, counter+1);
 		}
+		if (counter == 10) {
+			debug.log ("store failed: " + url);
+		}
 	});
 }
 
 function resetIconNoNews(tab, sharedURLs) {
 	// empty result if nothing has been shared yet
 	if (!sharedURLs.shared_urls) {
+		debug.log ("no shared urls so far");
 		showReadyIndicatorIcon(tab.id);
 		return
 	}
 
 	// if url has been shared before
 	if (sharedURLs.shared_urls.hasOwnProperty(tab.url)) {
+		debug.log ("url has been shared: " + tab.url);
 		showSuccessIndicatorIcon(tab.id);
+		return;
 	}
 
+	debug.log ("url not shared before: " + tab.url);
+	debug.log (sharedURLs);
 	showReadyIndicatorIcon(tab.id);
 }
+
 function resetIcon() {
 	chrome.tabs.getSelected(null, function(tab) {
 		// show the icon only for urls starting with http
 		if (tab.url.indexOf('http') != 0) return;
 
 		chrome.storage.local.get('shared_urls', function(sharedURLs) {
+			debug.log("shared urls so far:");
+			debug.log(sharedURLs)
 			// if automatic news check is active
 			if (settings.get('check_for_news') == true) {
 				chrome.storage.local.get('news', function(result) {
+					debug.log("got news state: " + result.news);
 					// there are news
 					if (result.news == true) {
+						debug.log("show news icon");
 						showNewsIndicatorIcon(tab.id);
 					} else {
+						// checkForUpdates is called every 60s
+						if (!intervalListener) {
+							debug.log("enable news check");
+							intervalListener = setInterval(checkForUpdates, 60000);
+						}
+
+						debug.log("show default icons");
 						resetIconNoNews(tab, sharedURLs);
 					}
 				});
-				// checkForUpdates is called every 60s
-				if (!intervalListener) {
-					intervalListener = setInterval(checkForUpdates, 60000);
-				}
 			} else {
+				debug.log("news check is disabled. show default icons.");
 				resetIconNoNews(tab, sharedURLs);
 			}
 		});
 	});
 }
 
-var latestNews = 0;
 // true if checkForUpdates is current active ... not threadsafe
 var workingInterval = false;
 
@@ -127,16 +147,23 @@ function checkForUpdates() {
 				url: getServer()+"k/update/json/" + settings.get('namespace')+"/",
 				dataType: 'json'
 			}).done(function(resp) {
-				//console.log("resp: " + resp.last_update);
-				//console.log("updated: " + updated);
+				// scale to javascript local time
+				resp.last_update *= 1000;
+
+				debug.log("results from k/update/json");
+				debug.log("resp: " + resp.last_update);
+				debug.log("updated: " + updated);
 				// so, are there any news?
 				if (updated<resp.last_update) {
+					debug.log("There are news!");
+					clearInterval(intervalListener);
 					chrome.storage.local.set({'updated': resp.last_update, 'news': true}, function() {
+						debug.log("set news state to true and updated to " + resp.last_update);
 						resetIcon();
 						workingInterval = false;
-						latestNews = resp.last_update;
 					});
 				} else {
+					debug.log("No news!");
 					workingInterval = false;
 				}
 			}).fail(function() {
@@ -144,6 +171,19 @@ function checkForUpdates() {
 			});
 		});
 	});
+}
+
+function openWebView() {
+	url = getServer() + "k/show/www/" + settings.get('namespace');
+	if (settings.get('check_for_news') == true) {
+		chrome.storage.local.set({'news': false}, function() {
+			debug.log("enable news check");
+			intervalListener = setInterval(checkForUpdates, 60000);
+		});
+	}
+	resetIcon();
+	window.open(url, '_blank');
+	window.focus();
 }
 
 function sharePage() {
@@ -157,36 +197,28 @@ function sharePage() {
 			// if not, we just use the tab url
 			else url += encodeURIComponent(tab.url);
 
-			sendPageToShare(url, tab.id);
+			sendPageToShare(url, tab);
 		});
 	});
 }
 
-function sendPageToShare(url, tabId) {
-	showLoadingIndicatorIcon(tabId);
+function sendPageToShare(url, tab) {
+	showLoadingIndicatorIcon(tab.id);
 	$.ajax({
 		type: "GET",
 		url: url,
 		dataType: 'json'
 	}).done(function(msg) {
 		if (msg.status="ok") {
-    		showSuccessIndicatorIcon(tabId);
-			addURLtoStorage(url);
+    		showSuccessIndicatorIcon(tab.id);
+			addURLtoStorage(tab.url);
 		} else {
-			showErrorIndicatorIcon(tabId);
+			showErrorIndicatorIcon(tab.id);
 		}
 	}).fail(function() {
-		showErrorIndicatorIcon(tabId);
+		showErrorIndicatorIcon(tab.id);
 	}).always(function(msg) {
 	});
-}
-
-function openWebView() {
-	url = getServer() + "k/show/www/" + settings.get('namespace');
-	chrome.storage.local.set({'updated': latestNews, 'news': false});
-	resetIcon();
-	window.open(url, '_blank');
-	window.focus();
 }
 
 var alreadyClicked = false;
@@ -221,6 +253,7 @@ function iconClick() {
     //Check for previous click. Yes => double click
     if (alreadyClicked) {
 		handleDoubleClick();
+		return;
     }
 
     alreadyClicked = true;
