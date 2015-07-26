@@ -35,6 +35,10 @@ this.i18n = {
         "en": "Automatically check for news and notify me.",
         "de": "Automatisch auf Neuigkeit überprüfen und mich informieren."
     },
+    "double_click_label": {
+        "en": "Use double click to share. Single click opens HTML view.",
+        "de": "Doppelklick zum Teilen benutzten. Einfacher Klick öffnet die HTML Ansicht."
+    },
     "disconnect_text": {
         "en": "The Disconnect Chrome extension can block like/g+ buttons. <a href='https://disconnect.me/'>Install it</a>",
         "de": "Die Disconnect Chrome Erweiterung kann like/g+ buttons blockieren. <a href='https://disconnect.me/'>Installieren</a>"

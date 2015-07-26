@@ -3,8 +3,12 @@ var settings = new Store('settings', {
 	'server' : '',
 	'namespace' : '',
 	'https_disabled' : '',
-	'check_for_news': ''
+	'check_for_news': '',
+	'double_click_for_share': ''
 });
+
+// disables debug log to console
+debug.setLevel(0);
 
 // for the news check
 var intervalListener;
@@ -29,7 +33,8 @@ chrome.extension.onMessage.addListener (function(request, sender, sendResponse) 
 });
 
 function addURLtoStorage(url) {
-	chrome.storage.sync.get('shared_urls', function(result) {
+	debug.log ("store url: " + url);
+	chrome.storage.local.get('shared_urls', function(result) {
 		var asoc;
 		if (result.shared_urls) {
 			asoc = result.shared_urls;
@@ -45,61 +50,76 @@ function addURLtoStorage(url) {
 
 // recursively called in case of error
 function storeSharedURLs(asoc, counter) {
-	//chrome.storage.sync.clear();
-	chrome.storage.sync.set({'shared_urls': asoc}, function() {
+	//chrome.storage.local.clear();
+	chrome.storage.local.set({'shared_urls': asoc}, function() {
 		// save failed?
 		if ( chrome.runtime.lastError && counter < 10) {
+			// we expect it to be full, so lets randomly delete something
 
 			// ok let's delete one random item from the shared urls
 			// this may delete the new url, but let us hope for the best
-			rdnnumber = Math.floor(Math.random()*asoc.length);
-			i = 0;
-			for (var key in asoc) {
-				if (i == rdnnumber) delete asoc[key];
-				++i;
-			}
+			var keys = Object.keys(assoc);
+			delete assoc[keys[Math.floor(keys.length * Math.random())]];
 
 			// retry to save data
 			storeSharedURLs(asoc, counter+1);
 		}
+		if (counter == 10) {
+			debug.log ("store failed: " + url);
+		}
 	});
+}
+
+function resetIconNoNews(tab, sharedURLs) {
+	// empty result if nothing has been shared yet
+	if (!sharedURLs.shared_urls) {
+		debug.log ("no shared urls so far");
+		showReadyIndicatorIcon(tab.id);
+		return;
+	}
+
+	// if url has been shared before
+	if (sharedURLs.shared_urls.hasOwnProperty(tab.url)) {
+		debug.log ("url has been shared: " + tab.url);
+		showSuccessIndicatorIcon(tab.id);
+		return;
+	}
+
+	debug.log ("url not shared before: " + tab.url);
+	debug.log (sharedURLs);
+	showReadyIndicatorIcon(tab.id);
 }
 
 function resetIcon() {
 	chrome.tabs.getSelected(null, function(tab) {
 		// show the icon only for urls starting with http
-		if (tab.url.indexOf('http') != 0) return;
+		if (tab.url.indexOf('http') !== 0) return;
 
-		chrome.storage.sync.get('shared_urls', function(result) {
-			// empty result if nothing has been shared yet
-			if (!result.shared_urls) {
-				showReadyIndicatorIcon(tab.id);
-				return;
-			}
-
-			// if url has been shared before
-			if (result.shared_urls.hasOwnProperty(tab.url)) {
-				showSuccessIndicatorIcon(tab.id);
-				return;
-			}
-
+		chrome.storage.local.get('shared_urls', function(sharedURLs) {
+			debug.log("shared urls so far:");
+			debug.log(sharedURLs);
 			// if automatic news check is active
-			if (settings.get('check_for_news') == true) {
-				chrome.storage.sync.get('news', function(result) {
+			if (settings.get('check_for_news') === true) {
+				chrome.storage.local.get('news', function(result) {
+					debug.log("got news state: " + result.news);
 					// there are news
-					if (result.news == true) {
+					if (result.news === true) {
+						debug.log("show news icon");
 						showNewsIndicatorIcon(tab.id);
 					} else {
-						showReadyIndicatorIcon(tab.id);
 						// checkForUpdates is called every 60s
 						if (!intervalListener) {
+							debug.log("enable news check");
 							intervalListener = setInterval(checkForUpdates, 60000);
 						}
+
+						debug.log("show default icons");
+						resetIconNoNews(tab, sharedURLs);
 					}
 				});
 			} else {
-				// new check is inactive
-				showReadyIndicatorIcon(tab.id);
+				debug.log("news check is disabled. show default icons.");
+				resetIconNoNews(tab, sharedURLs);
 			}
 		});
 	});
@@ -113,7 +133,7 @@ function checkForUpdates() {
 	workingInterval = true;
 
 	chrome.tabs.getSelected(null, function(tab) {
-		chrome.storage.sync.get('updated', function(result) {
+		chrome.storage.local.get('updated', function(result) {
 			var updated;
 			if (result.updated) {
 				updated = result.updated;
@@ -122,31 +142,53 @@ function checkForUpdates() {
 			}
 
 			// get last update from the kshare server
-			var xhr = new XMLHttpRequest();
-			xhr.open("GET", getServer()+"json?op=updated&ns=" + settings.get('namespace'), false);
-			xhr.send();
-			var resp = JSON.parse(xhr.responseText);
+			$.ajax({
+				type: "GET",
+				url: getServer()+"k/update/json/" + settings.get('namespace')+"/",
+				dataType: 'json'
+			}).done(function(resp) {
+				// scale to javascript local time
+				resp.last_update *= 1000;
 
-			// so, are there any news?
-			if (updated<resp.last_update) {
-				chrome.storage.sync.set({'updated': resp.last_update, 'news': true}, function() {
-					resetIcon();
-					console.log("disable news check");
-					window.clearInterval (intervalListener);
+				debug.log("results from k/update/json");
+				debug.log("resp: " + resp.last_update);
+				debug.log("updated: " + updated);
+				// so, are there any news?
+				if (updated<resp.last_update) {
+					debug.log("There are news!");
+					clearInterval(intervalListener);
+					chrome.storage.local.set({'updated': resp.last_update, 'news': true}, function() {
+						debug.log("set news state to true and updated to " + resp.last_update);
+						resetIcon();
+						workingInterval = false;
+					});
+				} else {
+					debug.log("No news!");
 					workingInterval = false;
-				});
-			} else {
-				workingInterval = false;
-			}
+				}
+			}).fail(function() {
+			}).always(function(msg) {
+			});
 		});
 	});
 }
 
+function openWebView() {
+	url = getServer() + "k/show/www/" + settings.get('namespace');
+	if (settings.get('check_for_news') === true) {
+		chrome.storage.local.set({'news': false}, function() {
+			debug.log("enable news check");
+			intervalListener = setInterval(checkForUpdates, 60000);
+		});
+	}
+	resetIcon();
+	window.open(url, '_blank');
+	window.focus();
+}
 
 function sharePage() {
-	url = getServer() + "oneclickshare?ns=" + settings.get('namespace') + "&url=";
+	url = getServer() + "k/share/json/" + settings.get('namespace') + "/?url=";
 	chrome.tabs.getSelected(null, function(tab) {
-		showLoadingIndicatorIcon(tab.id);
 		chrome.tabs.sendMessage(tab.id, {
 			job : 'getUrlToShare'
 		}, function handler(response) {
@@ -155,59 +197,70 @@ function sharePage() {
 			// if not, we just use the tab url
 			else url += encodeURIComponent(tab.url);
 
-			sendPageToShare(url, tab.id);
+			sendPageToShare(url, tab);
 		});
 	});
 }
 
-function sendPageToShare(url, tabId) {
-	var xhr = new XMLHttpRequest();
-	xhr.onreadystatechange = function(data) {
-		if (xhr.readyState == 4) {
-			if (xhr.status == 200) {
-				if (xhr.responseText.indexOf('0') > -1) {
-					showSuccessIndicatorIcon(tabId);
-
-					// store current url as shared
-					chrome.tabs.getSelected(null, function(tab) {
-						addURLtoStorage(tab.url);
-					});
-				} else {
-					showErrorIndicatorIcon(tabId);
-				}
-			} else {
-				showErrorIndicatorIcon(tabId);
-			}
+function sendPageToShare(url, tab) {
+	showLoadingIndicatorIcon(tab.id);
+	$.ajax({
+		type: "GET",
+		url: url,
+		dataType: 'json'
+	}).done(function(msg) {
+		if (msg.status=="ok") {
+    		showSuccessIndicatorIcon(tab.id);
+			addURLtoStorage(tab.url);
+		} else {
+			showErrorIndicatorIcon(tab.id);
 		}
-	}
-	xhr.open('GET', url, true);
-	xhr.send();
+	}).fail(function() {
+		showErrorIndicatorIcon(tab.id);
+	}).always(function(msg) {
+	});
 }
 
 var alreadyClicked = false;
 var clickTimer;
+
+function handleClick() {
+	clearTimeout(clickTimer);
+	alreadyClicked = false;
+
+	if (settings.get('double_click_for_share')) {
+		openWebView();
+		resetIcon();
+	} else {
+		sharePage();
+	}
+
+}
+
+function handleDoubleClick() {
+	clearTimeout(clickTimer);
+	alreadyClicked = false;
+
+	if (settings.get('double_click_for_share')) {
+		sharePage();
+	} else {
+		openWebView();
+		resetIcon();
+	}
+}
+
 function iconClick() {
     //Check for previous click. Yes => double click
     if (alreadyClicked) {
-        clearTimeout(clickTimer);
-		alreadyClicked = false;
-		chrome.storage.sync.set({'news': false}, function() {
-			resetIcon();
-			url = getServer() + "html.html?ns=" + settings.get('namespace');
-			window.open(url, '_blank');
-			window.focus();
-		});
-        return;
+		handleDoubleClick();
+		return;
     }
 
     alreadyClicked = true;
 
 	// timer will trigger if no second click is done within 250 ms
     clickTimer = setTimeout(function () {
-		sharePage();
-
-	    clearTimeout(clickTimer);
-	    alreadyClicked = false;
+		handleClick();
 	}, 250);
 }
 
