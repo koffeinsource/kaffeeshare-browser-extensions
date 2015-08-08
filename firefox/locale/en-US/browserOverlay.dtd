@@ -1,7 +1,0 @@
-<!ENTITY kaffeeshare.sharepage      "Share this page">
-<!ENTITY kaffeeshare.url            "Server">
-<!ENTITY kaffeeshare.ns             "Namespace">
-<!ENTITY kaffeeshare.http           "Disable HTTPS">
-<!ENTITY kaffeeshare.news           "Automatically check for news and notify me">
-<!ENTITY kaffeeshare.options.desc   "Please provide namespace and the sharing URL of your webapplication.">
-<!ENTITY kaffeeshare.options.title  "KaffeeShare Preferences">

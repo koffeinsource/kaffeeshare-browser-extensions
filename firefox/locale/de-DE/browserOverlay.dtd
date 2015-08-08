@@ -1,7 +1,0 @@
-<!ENTITY kaffeeshare.sharepage      "Diese Seite teilen">
-<!ENTITY kaffeeshare.url            "Server">
-<!ENTITY kaffeeshare.ns             "Namensraum">
-<!ENTITY kaffeeshare.http           "HTTPS deaktivieren">
-<!ENTITY kaffeeshare.news           "Automatisch auf Neuigkeit überprüfen und mich informieren">
-<!ENTITY kaffeeshare.options.desc   "Bitte gib den Namensraum und die Addresse des Servers ein.">
-<!ENTITY kaffeeshare.options.title  "KaffeeShare Einstellungen">
