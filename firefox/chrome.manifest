@@ -1,6 +1,0 @@
-content   kaffeeshare                content/
-skin      kaffeeshare  classic/1.0   skin/
-locale    kaffeeshare  en-US         locale/en-US/
-locale    kaffeeshare  de-DE         locale/de-DE/
-
-overlay chrome://browser/content/browser.xul  chrome://kaffeeshare/content/browserOverlay.xul
