@@ -5,21 +5,6 @@ browser.tabs.onActivated.addListener (resetIcon);
 browser.tabs.onUpdated.addListener (resetIcon);
 browser.pageAction.onClicked.addListener (iconClick);
 
-browser.commands.onCommand.addListener (function(command) {
-	if(command == "share") {
-		sharePage();
-	}
-});
-
-browser.runtime.onMessage.addListener (function(request, sender, sendResponse) {
-	if (request.share_page) {
-		sharePage();
-	}
-	if (request.reset_icon) {
-		resetIcon();
-	}
-});
-
 function addURLtoStorage(url) {
 	debug.log ("store url: " + url);
 	browser.storage.local.get('shared_urls').then(result => {

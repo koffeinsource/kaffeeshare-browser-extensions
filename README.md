@@ -1,5 +1,4 @@
 Our browser extenions for kaffeeshare
 =====================================
 
-Nothing more, nothing less
-
+Nothing more, nothing less.
