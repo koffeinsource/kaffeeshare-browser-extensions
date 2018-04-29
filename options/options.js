@@ -9,16 +9,15 @@ function saveOptions(e) {
 function restoreOptions() {
 
   function setCurrentChoice(result) {
-    document.querySelector("#server").value = result.server || "kaffeeshare.appspot.com";
-    document.querySelector("#namespace").value = result.namespace || "temp";
+    document.querySelector("#server").value = result[0].server || "kaffeeshare.appspot.com";
+    document.querySelector("#namespace").value = result[1].namespace || "temp";
   }
 
   function onError(error) {
     console.log(`Error: ${error}`);
   }
 
-  var getting = browser.storage.local.get("color");
-  getting.then(setCurrentChoice, onError);
+  Promise.all([browser.storage.local.get("server"), browser.storage.local.get("namespace")]).then(res => setCurrentChoice(res)).catch(onError);
 }
 
 document.addEventListener("DOMContentLoaded", restoreOptions);
